@@ -74,3 +74,14 @@ class EncoderBlock(nn.Module):
     def forward(self, x):
         attention = self.ln1(self.mha(x) + x)  # (batch_size, seq_len, d_out)
         return self.ln2(self.ff(attention) + attention)  # (batch_size, seq_len, d_out)
+
+
+class Encoder(nn.Module):
+    def __init__(self, n_blocks, n_heads, d_x, d_qk, d_v, d_out, d_ff):
+        super().__init__()
+        self.encoder_blocks = nn.Sequential(*[
+            EncoderBlock(n_heads, d_x, d_qk, d_v, d_out, d_ff) for _ in range(n_blocks)
+        ])
+
+    def forward(self, x):
+        return self.encoder_blocks(x)
