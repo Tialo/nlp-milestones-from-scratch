@@ -2,19 +2,18 @@ import torch
 import torch.nn as nn
 
 
-class ScaledDotProductAttention(nn.Module):
-    def forward(self, q, k, v):
-        """
-        q - (batch_size, seq_len, d_q)
-        k - (batch_size, seq_len, d_k)
-        v - (batch_size, seq_len, d_v)
+def scaled_dot_product_attention(q, k, v):
+    """
+    q - (batch_size, seq_len, d_q)
+    k - (batch_size, seq_len, d_k)
+    v - (batch_size, seq_len, d_v)
 
-        d_q == d_k
-        """
-        d_k = k.size(-1)
-        attn_weights = q @ k.transpose(1, 2) / d_k ** 0.5  # (batch_size, seq_len, seq_len)
-        attn_weights = torch.softmax(attn_weights, dim=-1)
-        return attn_weights @ v  # (batch_size, seq_len, d_v)
+    d_q == d_k
+    """
+    d_k = k.size(-1)
+    attn_weights = q @ k.transpose(1, 2) / d_k ** 0.5  # (batch_size, seq_len, seq_len)
+    attn_weights = torch.softmax(attn_weights, dim=-1)
+    return attn_weights @ v  # (batch_size, seq_len, d_v)
 
 
 class AttentionBlock(nn.Module):
@@ -23,14 +22,13 @@ class AttentionBlock(nn.Module):
         self.q_weights = nn.Linear(d_x, d_qk)
         self.k_weights = nn.Linear(d_x, d_qk)
         self.v_weights = nn.Linear(d_x, d_v)
-        self.attention_function = ScaledDotProductAttention()
 
     def forward(self, x):
         # x - (batch_size, seq_len, d_x)
         q = self.q_weights(x)
         k = self.k_weights(x)
         v = self.v_weights(x)
-        return self.attention_function(q, k, v)  # (batch_size, seq_len, d_v)
+        return scaled_dot_product_attention(q, k, v)  # (batch_size, seq_len, d_v)
 
 
 class MultiHeadAttentionBlock(nn.Module):
