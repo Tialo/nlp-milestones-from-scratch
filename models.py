@@ -11,7 +11,42 @@ class ScaledDotProductAttention(nn.Module):
 
         d_q == d_k
         """
-        d_k = k.shape[-1]
+        d_k = k.size(-1)
         attn_weights = q @ k.transpose(1, 2) / d_k ** 0.5  # (batch_size, seq_len, seq_len)
         attn_weights = torch.softmax(attn_weights, dim=-1)
         return attn_weights @ v  # (batch_size, seq_len, d_v)
+
+
+class AttentionBlock(nn.Module):
+    def __init__(self, d_x, d_qk, d_v):
+        super().__init__()
+        self.q_weights = nn.Linear(d_x, d_qk)
+        self.k_weights = nn.Linear(d_x, d_qk)
+        self.v_weights = nn.Linear(d_x, d_v)
+        self.attention_function = ScaledDotProductAttention()
+
+    def forward(self, x):
+        # x - (batch_size, seq_len, d_x)
+        q = self.q_weights(x)
+        k = self.k_weights(x)
+        v = self.v_weights(x)
+        return self.attention_function(q, k, v)
+
+
+class MultiHeadAttentionBlock(nn.Module):
+    def __init__(self, n_heads, d_x, d_qk, d_v, d_out):
+        super().__init__()
+        self.concat_head = nn.Linear(n_heads * d_v, d_out)
+        self.attention_blocks = nn.ModuleList([
+            AttentionBlock(d_x, d_qk, d_v) for _ in range(n_heads)
+        ])
+
+    def forward(self, x):
+        # x - (batch_size, seq_len, d_x)
+        batch_size = x.size(0)
+        seq_len = x.size(1)
+        attentions = [  # (n_heads, batch_size, seq_len, d_v)
+            attention_block(x) for attention_block in self.attention_blocks
+        ]
+        attentions = torch.concat(attentions).reshape(batch_size, seq_len, -1)
+        return self.concat_head(attentions)
