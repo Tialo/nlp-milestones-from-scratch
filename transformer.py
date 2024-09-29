@@ -37,7 +37,7 @@ class ScaledDotProductAttention(nn.Module):
             neg_inf = torch.tensor(float('-inf'))
             attn_weights = torch.where(mask, neg_inf, attn_weights)
         attn_weights = torch.softmax(attn_weights, dim=-1)
-        attn_weights = self.dropout(attn_weights)
+        attn_weights = self.dropout(attn_weights)  # AIAYN didn't ask for this
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
@@ -85,7 +85,7 @@ class FeedForward(nn.Module):
         self.ff = nn.Sequential(
             nn.Linear(d_out, d_ff),
             nn.ReLU(),
-            nn.Dropout(p=0.1),
+            nn.Dropout(p=0.1),  # AIAYN didn't ask for this
             nn.Linear(d_ff, d_out)
         )
 
