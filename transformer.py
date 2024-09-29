@@ -1,8 +1,20 @@
 """
 https://arxiv.org/pdf/1706.03762
 """
+import math
+
 import torch
 import torch.nn as nn
+
+
+def positional_encoding(seq_len, embed_size):
+    pos_vec = torch.arange(seq_len).unsqueeze(1)  # (seq_len, 1)
+    i_times_two_vec = torch.arange(0, embed_size, 2)  # (embed_size // 2)
+    pos_encoding = torch.empty(seq_len, embed_size)
+    div_term = torch.exp(-math.log(10000) * i_times_two_vec / embed_size)
+    pos_encoding[:, ::2] = torch.sin(pos_vec * div_term)
+    pos_encoding[:, 1::2] = torch.cos(pos_vec * div_term)
+    return pos_encoding
 
 
 class ScaledDotProductAttention(nn.Module):
@@ -131,3 +143,53 @@ class Decoder(nn.Module):
         for decoder_block in self.decoder_blocks:
             x = decoder_block(x, memory)
         return x
+
+
+class Transformer(nn.Module):
+    def __init__(
+        self,
+        vocab_size,
+        n_encoder_blocks=6,
+        n_decoder_block=6,
+        n_encoder_heads=8,
+        n_decoder_heads=8,
+        embed_size=512,
+        d_ff=2048,
+        max_len=4096,
+    ):
+        super().__init__()
+        self.pos_enc = positional_encoding(max_len, embed_size)
+        self.encoder = Encoder(n_encoder_blocks, n_encoder_heads, embed_size, d_ff)
+        self.decoder = Decoder(n_decoder_block, n_decoder_heads, embed_size, d_ff)
+        self.embedding = nn.Embedding(vocab_size, embed_size)
+        self.proj = nn.Linear(embed_size, vocab_size)
+
+    def forward(self, src, tgt):
+        """
+        src - (batch_size, seq_len_src)
+        tgt - (batch_size, seq_len_tgt)
+        """
+        src_embed = self.embedding(src) + self.pos_enc[:src.size(-1)]
+        memory = self.encoder(src_embed)
+        tgt_embed = self.embedding(tgt) + self.pos_enc[:tgt.size(-1)]
+        attention = self.decoder(tgt_embed, memory)
+        return self.proj(attention)
+
+    @torch.no_grad
+    def generate(self, src, start_token, eos_token, max_tokens=20):
+        if src.dim() == 1:
+            src = src.unsqueeze(0)
+        memory = self.encoder(self.embedding(src))
+        generated = [start_token]
+
+        for _ in range(max_tokens):
+            embeds = self.embedding(torch.tensor([generated]))
+            attention = self.decoder(embeds, memory)
+            logits = self.proj(attention)
+            generated_token = logits[:, -1].argmax()
+
+            if generated_token == eos_token:
+                break
+
+            generated.append(generated_token.item())
+        return torch.tensor(generated)
