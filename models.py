@@ -1,42 +1,54 @@
+"""
+https://arxiv.org/pdf/1706.03762
+"""
 import torch
 import torch.nn as nn
 
 
-def scaled_dot_product_attention(q, k, v):
-    """
-    q - (batch_size, seq_len, d_q)
-    k - (batch_size, seq_len, d_k)
-    v - (batch_size, seq_len, d_v)
+class ScaledDotProductAttention(nn.Module):
+    def __init__(self, mask):
+        super().__init__()
+        self.mask = mask
 
-    d_q == d_k
-    """
-    d_k = k.size(-1)
-    attn_weights = q @ k.transpose(1, 2) / d_k ** 0.5  # (batch_size, seq_len, seq_len)
-    attn_weights = torch.softmax(attn_weights, dim=-1)
-    return attn_weights @ v  # (batch_size, seq_len, d_v)
+    def forward(self, q, k, v):
+        """
+        q - (batch_size, seq_len_q, d_qk)
+        k - (batch_size, seq_len_kv, d_qk)
+        v - (batch_size, seq_len_kv, d_v)
+        """
+        d_k = k.size(-1)
+        attn_weights = q @ k.transpose(1, 2) / d_k ** 0.5  # (batch_size, seq_len_q, seq_len_kv)
+        if self.mask:
+            # seq_len_q == seq_len_kv
+            mask = torch.triu(torch.ones(q.size(-2), q.size(-2)), diagonal=1).type(torch.bool)  #  (seq_len_q, seq_len_q)
+            neg_inf = torch.tensor(float('-inf'))
+            attn_weights = torch.where(mask, neg_inf, attn_weights)
+        attn_weights = torch.softmax(attn_weights, dim=-1)
+        return attn_weights @ v  # (batch_size, seq_len_kv, d_v)
 
 
 class AttentionBlock(nn.Module):
-    def __init__(self, d_x, d_qk, d_v):
+    def __init__(self, d_x, d_qk, d_v, mask=False):
         super().__init__()
         self.q_weights = nn.Linear(d_x, d_qk)
         self.k_weights = nn.Linear(d_x, d_qk)
         self.v_weights = nn.Linear(d_x, d_v)
+        self.sdpa = ScaledDotProductAttention(mask)
 
     def forward(self, x):
         # x - (batch_size, seq_len, d_x)
         q = self.q_weights(x)
         k = self.k_weights(x)
         v = self.v_weights(x)
-        return scaled_dot_product_attention(q, k, v)  # (batch_size, seq_len, d_v)
+        return self.sdpa(q, k, v)  # (batch_size, seq_len, d_v)
 
 
 class MultiHeadAttentionBlock(nn.Module):
-    def __init__(self, n_heads, d_x, d_qk, d_v, d_out):
+    def __init__(self, n_heads, d_x, d_qk, d_v, d_out, mask=False):
         super().__init__()
         self.concat_head = nn.Linear(n_heads * d_v, d_out)
         self.attention_blocks = nn.ModuleList([
-            AttentionBlock(d_x, d_qk, d_v) for _ in range(n_heads)
+            AttentionBlock(d_x, d_qk, d_v, mask) for _ in range(n_heads)
         ])
 
     def forward(self, x):
