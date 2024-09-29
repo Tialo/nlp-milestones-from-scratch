@@ -20,6 +20,7 @@ def positional_encoding(seq_len, embed_size):
 class ScaledDotProductAttention(nn.Module):
     def __init__(self, mask):
         super().__init__()
+        self.dropout = nn.Dropout(p=0.1)
         self.mask = mask
 
     def forward(self, q, k, v):
@@ -36,6 +37,7 @@ class ScaledDotProductAttention(nn.Module):
             neg_inf = torch.tensor(float('-inf'))
             attn_weights = torch.where(mask, neg_inf, attn_weights)
         attn_weights = torch.softmax(attn_weights, dim=-1)
+        attn_weights = self.dropout(attn_weights)
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
@@ -83,6 +85,7 @@ class FeedForward(nn.Module):
         self.ff = nn.Sequential(
             nn.Linear(d_out, d_ff),
             nn.ReLU(),
+            nn.Dropout(p=0.1),
             nn.Linear(d_ff, d_out)
         )
 
@@ -97,10 +100,11 @@ class EncoderBlock(nn.Module):
         self.mha = MultiHeadAttention(n_heads, embed_size)
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
+        self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x):
-        attention = self.ln1(self.mha(x, x, x) + x)  # (batch_size, seq_len, embed_size)
-        return self.ln2(self.ff(attention) + attention)  # (batch_size, seq_len, embed_size)
+        attention = self.ln1(self.dropout(self.mha(x, x, x)) + x)  # (batch_size, seq_len, embed_size)
+        return self.ln2(self.dropout(self.ff(attention)) + attention)  # (batch_size, seq_len, embed_size)
 
 
 class Encoder(nn.Module):
@@ -125,11 +129,12 @@ class DecoderBlock(nn.Module):
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
         self.ln3 = nn.LayerNorm(embed_size)
+        self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x, memory):
-        attention = self.ln1(self.mmha(x, x, x) + x)
-        attention = self.ln2(self.mha(attention, memory, memory) + attention)
-        return self.ln3(self.ff(attention) + attention)
+        attention = self.ln1(self.dropout(self.mmha(x, x, x)) + x)
+        attention = self.ln2(self.dropout(self.mha(attention, memory, memory)) + attention)
+        return self.ln3(self.dropout(self.ff(attention)) + attention)
 
 
 class Decoder(nn.Module):
@@ -164,14 +169,18 @@ class Transformer(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embed_size)
         self.proj = nn.Linear(embed_size, vocab_size)
 
+        self.dropout = nn.Dropout(p=0.1)
+
     def forward(self, src, tgt):
         """
         src - (batch_size, seq_len_src)
         tgt - (batch_size, seq_len_tgt)
         """
-        src_embed = self.embedding(src) + self.pos_enc[:src.size(-1)]
+        src_embed = self.embedding(src) + self.pos_enc[:src.size(1)]  # (batch_size, seq_len_src, embed_size)
+        src_embed = self.dropout(src_embed)
         memory = self.encoder(src_embed)
-        tgt_embed = self.embedding(tgt) + self.pos_enc[:tgt.size(-1)]
+        tgt_embed = self.embedding(tgt) + self.pos_enc[:tgt.size(1)]  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed = self.dropout(tgt_embed)
         attention = self.decoder(tgt_embed, memory)
         return self.proj(attention)
 
