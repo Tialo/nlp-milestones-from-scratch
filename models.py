@@ -27,7 +27,7 @@ class ScaledDotProductAttention(nn.Module):
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
-class MultiHeadAttentionBlock(nn.Module):
+class MultiHeadAttention(nn.Module):
     def __init__(self, n_heads, embed_size, mask=False):
         super().__init__()
         assert embed_size % n_heads == 0
@@ -50,7 +50,7 @@ class MultiHeadAttentionBlock(nn.Module):
         v - (batch_size, seq_len_v, embed_size)
         """
         batch_size = q.size(0)
-        seq_len_v = v.size(1)
+        seq_len_q = q.size(1)
 
         q = self.q_weights(q)
         k = self.k_weights(k)
@@ -61,7 +61,8 @@ class MultiHeadAttentionBlock(nn.Module):
         v = v.view(batch_size, self.n_heads, v.size(1), self.head_dim)
 
         attentions = self.sdpa(q, k, v)  # (batch_size, n_heads, seq_len_v, head_dim)
-        return self.proj(attentions.view(batch_size, seq_len_v, self.embed_size))  # (batch_size, seq_len_v, embed_size)
+        # .contiguous() often used here
+        return self.proj(attentions.view(batch_size, seq_len_q, self.embed_size))  # (batch_size, seq_len_q, embed_size)
 
 
 class FeedForward(nn.Module):
@@ -81,7 +82,7 @@ class EncoderBlock(nn.Module):
     def __init__(self, n_heads, embed_size, d_ff):
         super().__init__()
         self.ff = FeedForward(embed_size, d_ff)
-        self.mha = MultiHeadAttentionBlock(n_heads, embed_size)
+        self.mha = MultiHeadAttention(n_heads, embed_size)
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
 
@@ -93,9 +94,40 @@ class EncoderBlock(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, n_blocks, n_heads, embed_size, d_ff):
         super().__init__()
-        self.encoder_blocks = nn.Sequential(*[
+        self.encoder_blocks = nn.ModuleList([
             EncoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
         ])
 
     def forward(self, x):
-        return self.encoder_blocks(x)
+        for encoder_block in self.encoder_blocks:
+            x = encoder_block(x)
+        return x
+
+
+class DecoderBlock(nn.Module):
+    def __init__(self, n_heads, embed_size, d_ff):
+        super().__init__()
+        self.ff = FeedForward(embed_size, d_ff)
+        self.mha = MultiHeadAttention(n_heads, embed_size)
+        self.mmha = MultiHeadAttention(n_heads, embed_size, mask=True)
+        self.ln1 = nn.LayerNorm(embed_size)
+        self.ln2 = nn.LayerNorm(embed_size)
+        self.ln3 = nn.LayerNorm(embed_size)
+
+    def forward(self, x, memory):
+        attention = self.ln1(self.mmha(x, x, x) + x)
+        attention = self.ln2(self.mha(attention, memory, memory) + attention)
+        return self.ln3(self.ff(attention) + attention)
+
+
+class Decoder(nn.Module):
+    def __init__(self, n_blocks, n_heads, embed_size, d_ff):
+        super().__init__()
+        self.decoder_blocks = nn.ModuleList([
+            DecoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
+        ])
+
+    def forward(self, x, memory):
+        for decoder_block in self.decoder_blocks:
+            x = decoder_block(x, memory)
+        return x
