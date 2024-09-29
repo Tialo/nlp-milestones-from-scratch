@@ -171,6 +171,7 @@ class Transformer(nn.Module):
 
         self.dropout = nn.Dropout(p=0.1)
 
+    # TODO: add src_mask support for padded batches
     def forward(self, src, tgt):
         """
         src - (batch_size, seq_len_src)
