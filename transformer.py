@@ -8,6 +8,8 @@ import torch.nn as nn
 
 neg_inf = float('-inf')
 
+# TODO: I am pretty sure I've forgot to normalize or scale something somewhere
+
 
 def create_causal_mask(seq_len):
     return torch.tril(torch.ones(seq_len, seq_len), diagonal=0).type(torch.uint8)  # (seq_len, seq_len)
@@ -152,7 +154,7 @@ class Decoder(nn.Module):
 
     def forward(self, x, memory, encoder_mask=None):
         # encoder_mask - (batch_size, 1, seq_len)
-        causal_mask = create_causal_mask(x.size(1))[torch.newaxis, torch.newaxis]  # (1, 1, seq_len_tgt, seq_len_tgt)
+        causal_mask = create_causal_mask(x.size(1))[torch.newaxis, torch.newaxis].to(x.device)  # (1, 1, seq_len_tgt, seq_len_tgt)
         for decoder_block in self.decoder_blocks:
             x = decoder_block(x, memory, causal_mask, encoder_mask=encoder_mask)
         return x
@@ -187,10 +189,12 @@ class Transformer(nn.Module):
         """
         if src_mask is not None:
             src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
-        src_embed = self.embedding(src) + self.pos_enc[:src.size(1)]  # (batch_size, seq_len_src, embed_size)
+        src_embed = self.embedding(src)  # (batch_size, seq_len_src, embed_size)
+        src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)
         src_embed = self.dropout(src_embed)
         memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
-        tgt_embed = self.embedding(tgt) + self.pos_enc[:tgt.size(1)]  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed = self.embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
         tgt_embed = self.dropout(tgt_embed)
         attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
         return self.proj(attention)  # (batch_size, seq_len_tgt, vocab_size)

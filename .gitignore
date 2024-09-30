@@ -2,3 +2,6 @@
 __pycache__
 data.txt
 tokenizer.json
+train_loss.json
+val_loss.json
+best_model.pth
