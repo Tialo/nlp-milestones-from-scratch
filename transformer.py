@@ -6,6 +6,12 @@ import math
 import torch
 import torch.nn as nn
 
+neg_inf = float('-inf')
+
+
+def create_causal_mask(seq_len):
+    return torch.tril(torch.ones(seq_len, seq_len), diagonal=0).type(torch.uint8)  # (seq_len, seq_len)
+
 
 def positional_encoding(seq_len, embed_size):
     pos_vec = torch.arange(seq_len).unsqueeze(1)  # (seq_len, 1)
@@ -18,31 +24,28 @@ def positional_encoding(seq_len, embed_size):
 
 
 class ScaledDotProductAttention(nn.Module):
-    def __init__(self, mask):
+    def __init__(self):
         super().__init__()
         self.dropout = nn.Dropout(p=0.1)
-        self.mask = mask
 
-    def forward(self, q, k, v):
+    def forward(self, q, k, v, mask=None):
         """
-        q - (batch_size, n_heads, seq_len_q, d_qk)
-        k - (batch_size, n_heads, seq_len_kv, d_qk)
-        v - (batch_size, n_heads, seq_len_kv, d_v)
+        q - (batch_size, n_heads, seq_len_q, embed_size)
+        k - (batch_size, n_heads, seq_len_kv, embed_size)
+        v - (batch_size, n_heads, seq_len_kv, embed_size)
+        mask - (batch_size or 1, seq_len_q or 1 (for broadcasting), seq_len_kv)
         """
         d_k = k.size(-1)
         attn_weights = q @ k.transpose(-1, -2) / d_k ** 0.5  # (batch_size, n_heads, seq_len_q, seq_len_kv)
-        if self.mask:
-            # seq_len_q == seq_len_kv
-            mask = torch.triu(torch.ones(q.size(-2), q.size(-2)), diagonal=1).type(torch.bool)  #  (seq_len_q, seq_len_q)
-            neg_inf = torch.tensor(float('-inf'))
-            attn_weights = torch.where(mask, neg_inf, attn_weights)
+        if mask is not None:
+            attn_weights = attn_weights.masked_fill(mask[:, torch.newaxis] == 0, neg_inf)
         attn_weights = torch.softmax(attn_weights, dim=-1)
         attn_weights = self.dropout(attn_weights)  # AIAYN didn't ask for this
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, n_heads, embed_size, mask=False):
+    def __init__(self, n_heads, embed_size):
         super().__init__()
         assert embed_size % n_heads == 0
 
@@ -55,13 +58,14 @@ class MultiHeadAttention(nn.Module):
         self.k_weights = nn.Linear(embed_size, embed_size)
         self.v_weights = nn.Linear(embed_size, embed_size)
 
-        self.sdpa = ScaledDotProductAttention(mask)
+        self.sdpa = ScaledDotProductAttention()
 
-    def forward(self, q, k, v):
+    def forward(self, q, k, v, mask=None):
         """
         q - (batch_size, seq_len_q, embed_size)
-        k - (batch_size, seq_len_k, embed_size)
-        v - (batch_size, seq_len_v, embed_size)
+        k - (batch_size, seq_len_kv, embed_size)
+        v - (batch_size, seq_len_kv, embed_size)
+        mask - (batch_size, seq_len_qkv)
         """
         batch_size = q.size(0)
         seq_len_q = q.size(1)
@@ -74,7 +78,7 @@ class MultiHeadAttention(nn.Module):
         k = k.view(batch_size, self.n_heads, k.size(1), self.head_dim)
         v = v.view(batch_size, self.n_heads, v.size(1), self.head_dim)
 
-        attentions = self.sdpa(q, k, v)  # (batch_size, n_heads, seq_len_v, head_dim)
+        attentions = self.sdpa(q, k, v, mask=mask)  # (batch_size, n_heads, seq_len_v, head_dim)
         # .contiguous() often used here
         return self.proj(attentions.view(batch_size, seq_len_q, self.embed_size))  # (batch_size, seq_len_q, embed_size)
 
@@ -102,8 +106,8 @@ class EncoderBlock(nn.Module):
         self.ln2 = nn.LayerNorm(embed_size)
         self.dropout = nn.Dropout(p=0.1)
 
-    def forward(self, x):
-        attention = self.ln1(self.dropout(self.mha(x, x, x)) + x)  # (batch_size, seq_len, embed_size)
+    def forward(self, x, mask=None):
+        attention = self.ln1(self.dropout(self.mha(x, x, x, mask)) + x)  # (batch_size, seq_len, embed_size)
         return self.ln2(self.dropout(self.ff(attention)) + attention)  # (batch_size, seq_len, embed_size)
 
 
@@ -114,9 +118,10 @@ class Encoder(nn.Module):
             EncoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
         ])
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
+        # mask - (batch_size, 1, seq_len)
         for encoder_block in self.encoder_blocks:
-            x = encoder_block(x)
+            x = encoder_block(x, mask)
         return x
 
 
@@ -125,15 +130,16 @@ class DecoderBlock(nn.Module):
         super().__init__()
         self.ff = FeedForward(embed_size, d_ff)
         self.mha = MultiHeadAttention(n_heads, embed_size)
-        self.mmha = MultiHeadAttention(n_heads, embed_size, mask=True)
+        self.mmha = MultiHeadAttention(n_heads, embed_size)
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
         self.ln3 = nn.LayerNorm(embed_size)
         self.dropout = nn.Dropout(p=0.1)
 
-    def forward(self, x, memory):
-        attention = self.ln1(self.dropout(self.mmha(x, x, x)) + x)
-        attention = self.ln2(self.dropout(self.mha(attention, memory, memory)) + attention)
+    def forward(self, x, memory, causal_mask, encoder_mask=None):
+        # x - (batch_size, seq_len, embed_size)
+        attention = self.ln1(self.dropout(self.mmha(x, x, x, causal_mask)) + x)
+        attention = self.ln2(self.dropout(self.mha(attention, memory, memory, mask=encoder_mask)) + attention)
         return self.ln3(self.dropout(self.ff(attention)) + attention)
 
 
@@ -144,9 +150,11 @@ class Decoder(nn.Module):
             DecoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
         ])
 
-    def forward(self, x, memory):
+    def forward(self, x, memory, encoder_mask=None):
+        # encoder_mask - (batch_size, 1, seq_len)
+        causal_mask = create_causal_mask(x.size(1))[torch.newaxis, torch.newaxis]  # (1, 1, seq_len_tgt, seq_len_tgt)
         for decoder_block in self.decoder_blocks:
-            x = decoder_block(x, memory)
+            x = decoder_block(x, memory, causal_mask, encoder_mask=encoder_mask)
         return x
 
 
@@ -171,24 +179,28 @@ class Transformer(nn.Module):
 
         self.dropout = nn.Dropout(p=0.1)
 
-    # TODO: add src_mask support for padded batches
-    def forward(self, src, tgt):
+    def forward(self, src, tgt, src_mask=None):
         """
         src - (batch_size, seq_len_src)
         tgt - (batch_size, seq_len_tgt)
+        src_mask - (batch_size, seq_len_src)
         """
+        if src_mask is not None:
+            src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
         src_embed = self.embedding(src) + self.pos_enc[:src.size(1)]  # (batch_size, seq_len_src, embed_size)
         src_embed = self.dropout(src_embed)
-        memory = self.encoder(src_embed)
+        memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
         tgt_embed = self.embedding(tgt) + self.pos_enc[:tgt.size(1)]  # (batch_size, seq_len_tgt, embed_size)
         tgt_embed = self.dropout(tgt_embed)
-        attention = self.decoder(tgt_embed, memory)
-        return self.proj(attention)
+        attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
+        return self.proj(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
     @torch.no_grad
     def generate(self, src, start_token, eos_token, max_tokens=20):
         if src.dim() == 1:
             src = src.unsqueeze(0)
+        elif src.size(0) != 1:
+            raise ValueError("batch_size > 1 is not supported...")
         memory = self.encoder(self.embedding(src))
         generated = [start_token]
 
