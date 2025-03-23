@@ -5,3 +5,7 @@ tokenizer.json
 train_loss.json
 val_loss.json
 best_model.pth
+venv
+train_data.txt
+main.ipynb
+best_val_loss.txt

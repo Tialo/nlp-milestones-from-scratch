@@ -8,14 +8,12 @@ import torch.nn as nn
 
 neg_inf = float('-inf')
 
-# TODO: I am pretty sure I've forgot to normalize or scale something somewhere
 
-
-def create_causal_mask(seq_len):
+def create_causal_mask(seq_len: int):
     return torch.tril(torch.ones(seq_len, seq_len), diagonal=0).type(torch.uint8)  # (seq_len, seq_len)
 
 
-def positional_encoding(seq_len, embed_size):
+def positional_encoding(seq_len: int, embed_size: int):
     pos_vec = torch.arange(seq_len).unsqueeze(1)  # (seq_len, 1)
     i_times_two_vec = torch.arange(0, embed_size, 2)  # (embed_size // 2)
     pos_encoding = torch.empty(seq_len, embed_size)
@@ -42,7 +40,7 @@ class ScaledDotProductAttention(nn.Module):
         if mask is not None:
             attn_weights = attn_weights.masked_fill(mask[:, torch.newaxis] == 0, neg_inf)
         attn_weights = torch.softmax(attn_weights, dim=-1)
-        attn_weights = self.dropout(attn_weights)  # AIAYN didn't ask for this
+        # attn_weights = self.dropout(attn_weights) 
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
@@ -100,7 +98,7 @@ class FeedForward(nn.Module):
 
 
 class EncoderBlock(nn.Module):
-    def __init__(self, n_heads, embed_size, d_ff):
+    def __init__(self, n_heads: int, embed_size: int, d_ff: int):
         super().__init__()
         self.ff = FeedForward(embed_size, d_ff)
         self.mha = MultiHeadAttention(n_heads, embed_size)
@@ -114,7 +112,7 @@ class EncoderBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, n_blocks, n_heads, embed_size, d_ff):
+    def __init__(self, n_blocks: int, n_heads: int, embed_size: int, d_ff: int):
         super().__init__()
         self.encoder_blocks = nn.ModuleList([
             EncoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
@@ -128,7 +126,7 @@ class Encoder(nn.Module):
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, n_heads, embed_size, d_ff):
+    def __init__(self, n_heads: int, embed_size: int, d_ff: int):
         super().__init__()
         self.ff = FeedForward(embed_size, d_ff)
         self.mha = MultiHeadAttention(n_heads, embed_size)
@@ -146,7 +144,7 @@ class DecoderBlock(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, n_blocks, n_heads, embed_size, d_ff):
+    def __init__(self, n_blocks: int, n_heads: int, embed_size: int, d_ff: int):
         super().__init__()
         self.decoder_blocks = nn.ModuleList([
             DecoderBlock(n_heads, embed_size, d_ff) for _ in range(n_blocks)
@@ -163,23 +161,27 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,
-        vocab_size,
-        n_encoder_blocks=6,
-        n_decoder_block=6,
-        n_encoder_heads=8,
-        n_decoder_heads=8,
-        embed_size=512,
-        d_ff=2048,
-        max_len=4096,
+        vocab_size: int,
+        n_encoder_blocks: int = 6,
+        n_decoder_block: int = 6,
+        n_encoder_heads: int = 8,
+        n_decoder_heads: int = 8,
+        embed_size: int = 512,
+        d_ff: int = 2048,
+        max_len: int = 4096,
     ):
         super().__init__()
         self.pos_enc = positional_encoding(max_len, embed_size)
         self.encoder = Encoder(n_encoder_blocks, n_encoder_heads, embed_size, d_ff)
         self.decoder = Decoder(n_decoder_block, n_decoder_heads, embed_size, d_ff)
         self.embedding = nn.Embedding(vocab_size, embed_size)
-        self.proj = nn.Linear(embed_size, vocab_size)
+        self.vocab_bias = nn.Parameter(torch.zeros(vocab_size))
 
         self.dropout = nn.Dropout(p=0.1)
+
+    def _proj(self, x):
+        """In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"""
+        return x @ self.embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
 
     def forward(self, src, tgt, src_mask=None):
         """
@@ -197,10 +199,10 @@ class Transformer(nn.Module):
         tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
         tgt_embed = self.dropout(tgt_embed)
         attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
-        return self.proj(attention)  # (batch_size, seq_len_tgt, vocab_size)
+        return self._proj(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
     @torch.no_grad
-    def generate(self, src, start_token, eos_token, max_tokens=20):
+    def generate(self, src, start_token, eos_token: int, max_tokens: int = 20):
         if src.dim() == 1:
             src = src.unsqueeze(0)
         elif src.size(0) != 1:
@@ -211,7 +213,8 @@ class Transformer(nn.Module):
         for _ in range(max_tokens):
             embeds = self.embedding(torch.tensor([generated]))
             attention = self.decoder(embeds, memory)
-            logits = self.proj(attention)
+            logits = self._proj(attention)
+            # TODO: implement beam search
             generated_token = logits[:, -1].argmax()
 
             if generated_token == eos_token:
