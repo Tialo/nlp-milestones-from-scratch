@@ -182,6 +182,21 @@ class Transformer(nn.Module):
     def _proj(self, x):
         """In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"""
         return x @ self.embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
+    
+    def _encode(self, src, src_mask=None):
+        if src_mask is not None:
+            src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
+        src_embed = self.embedding(src)  # (batch_size, seq_len_src, embed_size)
+        src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)
+        src_embed = self.dropout(src_embed)
+        return self.encoder(src_embed, mask=src_mask), src_mask  # (batch_size, seq_len_src, embed_size)
+
+    def _decode(self, memory, tgt, src_mask=None):
+        tgt_embed = self.embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
+        tgt_embed = self.dropout(tgt_embed)
+        attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
+        return self._proj(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
     def forward(self, src, tgt, src_mask=None):
         """
@@ -189,31 +204,20 @@ class Transformer(nn.Module):
         tgt - (batch_size, seq_len_tgt)
         src_mask - (batch_size, seq_len_src)
         """
-        if src_mask is not None:
-            src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
-        src_embed = self.embedding(src)  # (batch_size, seq_len_src, embed_size)
-        src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)
-        src_embed = self.dropout(src_embed)
-        memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
-        tgt_embed = self.embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
-        tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
-        tgt_embed = self.dropout(tgt_embed)
-        attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
-        return self._proj(attention)  # (batch_size, seq_len_tgt, vocab_size)
+        memory, src_mask = self._encode(src, src_mask)
+        return self._decode(memory, tgt, src_mask)
 
     @torch.no_grad
-    def generate(self, src, start_token, eos_token: int, max_tokens: int = 20):
+    def generate(self, src, start_token: int, eos_token: int, max_tokens: int = 20):
         if src.dim() == 1:
             src = src.unsqueeze(0)
         elif src.size(0) != 1:
             raise ValueError("batch_size > 1 is not supported...")
-        memory = self.encoder(self.embedding(src))
+        memory, _ = self._encode(src)
         generated = [start_token]
 
         for _ in range(max_tokens):
-            embeds = self.embedding(torch.tensor([generated]))
-            attention = self.decoder(embeds, memory)
-            logits = self._proj(attention)
+            logits = self._decode(memory, torch.tensor([generated]).to(src.device))
             # TODO: implement beam search
             generated_token = logits[:, -1].argmax()
 

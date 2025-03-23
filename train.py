@@ -6,15 +6,19 @@ import torch.nn as nn
 from tqdm.auto import tqdm
 
 from transformer import Transformer
-from tokenizer_utils import get_tokenizer
+from tokenizer_utils import get_tokenizer, decode
 from data_utils import get_data_batch_iterator, load_data
 
 tokenizer = get_tokenizer("tokenizer.json")
 pad_index = tokenizer.token_to_id("[PAD]")
+start_index = tokenizer.token_to_id("[START]")
+end_index = tokenizer.token_to_id("[END]")
 data = load_data("data.txt")
 
-train_data = data[:10_000]
-val_data = data[10_000:12_500]
+TRAIN_SIZE = int(2e4)
+VAL_SIZE = int(5e3)
+train_data = data[:TRAIN_SIZE]
+val_data = data[TRAIN_SIZE:TRAIN_SIZE + VAL_SIZE]
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Transformer(tokenizer.get_vocab_size()).to(device)
@@ -30,7 +34,7 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
     lr_lambda=rate,
 )
 
-epochs = 5
+epochs = 15
 batch_size = 64
 if os.path.isfile("best_val_loss.txt"):
     with open("best_val_loss.txt") as f:
@@ -77,6 +81,19 @@ for e in range(epochs):
             logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
             loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
             epoch_val_loss_history.append(loss.item())
+
+        src_tokens, tgt_tokens, src_mask = next(get_data_batch_iterator(val_data, tokenizer, batch_size=1))
+        generated = model.generate(
+            src_tokens.to(device),
+            start_index,
+            end_index,
+            # We set the maximum output length during inference to input length + 50, but terminate early when possible
+            max_tokens=len(src_tokens) + 50,
+        )
+        print("Source:", decode(tokenizer, src_tokens))
+        print("Target:", decode(tokenizer, tgt_tokens))
+        print("Generated:", decode(tokenizer, generated))
+        print()
 
     val_loss = torch.tensor(epoch_val_loss_history).mean().item()
     print(f"{val_loss=}, {best_val_loss=}", flush=True)

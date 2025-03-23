@@ -1,3 +1,5 @@
+import torch
+
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.trainers import BpeTrainer
@@ -30,6 +32,16 @@ def get_tokenizer(tokenizer_path):
     )
     tokenizer.enable_padding()
     return tokenizer
+
+
+def decode(tokenizer, sequence):
+    if isinstance(sequence, torch.Tensor):
+        if sequence.ndim == 2:
+            if sequence.shape[0] != 1:
+                raise ValueError("Can't handle 2D tensor in decode with 1st dimension > 1")
+            sequence = sequence[0]
+        sequence = sequence.tolist()
+    return tokenizer.decode(sequence)
 
 
 if __name__ == '__main__':
