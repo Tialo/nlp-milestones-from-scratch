@@ -15,8 +15,9 @@ start_index = tokenizer.token_to_id("[START]")
 end_index = tokenizer.token_to_id("[END]")
 data = load_data("data.txt")
 
-TRAIN_SIZE = int(2e4)
-VAL_SIZE = int(5e3)
+TRAIN_SIZE = 500_000
+VAL_SIZE = 50_000
+assert TRAIN_SIZE + VAL_SIZE < len(data), f"Val dataset is truncated. Total samples {len(data)}, trying to use {TRAIN_SIZE + VAL_SIZE} samples"
 train_data = data[:TRAIN_SIZE]
 val_data = data[TRAIN_SIZE:TRAIN_SIZE + VAL_SIZE]
 
@@ -34,7 +35,7 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
     lr_lambda=rate,
 )
 
-epochs = 15
+epochs = 50
 batch_size = 64
 if os.path.isfile("best_val_loss.txt"):
     with open("best_val_loss.txt") as f:
@@ -87,7 +88,7 @@ for e in range(epochs):
             src_tokens.to(device),
             start_index,
             end_index,
-            # We set the maximum output length during inference to input length + 50, but terminate early when possible
+            # "We set the maximum output length during inference to input length + 50, but terminate early when possible"
             max_tokens=len(src_tokens) + 50,
         )
         print("Source:", decode(tokenizer, src_tokens))

@@ -174,8 +174,15 @@ class Transformer(nn.Module):
         self.pos_enc = positional_encoding(max_len, embed_size)
         self.encoder = Encoder(n_encoder_blocks, n_encoder_heads, embed_size, d_ff)
         self.decoder = Decoder(n_decoder_block, n_decoder_heads, embed_size, d_ff)
+
+        # Use of default embedding initialization N(0, 1)
+        # For pre-softmax transformation makes norm of
+        # Weights very big, thus make convergence slow
+        sqrt_k = (1 / embed_size) ** 0.5
         self.embedding = nn.Embedding(vocab_size, embed_size)
+        nn.init.uniform_(self.embedding.weight, a=-sqrt_k, b=sqrt_k)
         self.vocab_bias = nn.Parameter(torch.zeros(vocab_size))
+        nn.init.uniform_(self.vocab_bias, a=-sqrt_k, b=sqrt_k)
 
         self.dropout = nn.Dropout(p=0.1)
 
@@ -184,14 +191,24 @@ class Transformer(nn.Module):
         return x @ self.embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
     
     def _encode(self, src, src_mask=None):
+        """
+        src - (batch_size, seq_len_src)
+        src_mask - (batch_size, seq_len_src)
+        """
         if src_mask is not None:
             src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
         src_embed = self.embedding(src)  # (batch_size, seq_len_src, embed_size)
-        src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)
-        src_embed = self.dropout(src_embed)
-        return self.encoder(src_embed, mask=src_mask), src_mask  # (batch_size, seq_len_src, embed_size)
+        src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)  # (batch_size, seq_len_src, embed_size)
+        src_embed = self.dropout(src_embed)  # (batch_size, seq_len_src, embed_size)
+        memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
+        return memory, src_mask
 
     def _decode(self, memory, tgt, src_mask=None):
+        """
+        memory - (batch_size, seq_len_src, embed_size)
+        tgt - (batch_size, seq_len_tgt)
+        src_mask - (batch_size, seq_len_src)
+        """
         tgt_embed = self.embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
         tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
         tgt_embed = self.dropout(tgt_embed)
