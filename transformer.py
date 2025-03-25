@@ -176,23 +176,44 @@ class Transformer(nn.Module):
         self.encoder = Encoder(n_encoder_blocks, n_encoder_heads, embed_size, d_ff)
         self.decoder = Decoder(n_decoder_block, n_decoder_heads, embed_size, d_ff)
 
-        # Use of default embedding initialization N(0, 1)
-        # For pre-softmax transformation makes norm of
-        # Weights very big, thus make convergence slow
-
         self.sqrt_dmodel = embed_size ** 0.5
-        sqrt_k = (1 / embed_size) ** 0.5
         self.src_embedding = nn.Embedding(src_vocab_size, embed_size)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, embed_size)
-        nn.init.uniform_(self.src_embedding.weight, a=-sqrt_k, b=sqrt_k)
-        nn.init.uniform_(self.tgt_embedding.weight, a=-sqrt_k, b=sqrt_k)
         self.vocab_bias = nn.Parameter(torch.zeros(tgt_vocab_size))
-        nn.init.uniform_(self.vocab_bias, a=-sqrt_k, b=sqrt_k)
 
         self.dropout = nn.Dropout(p=0.1)
+        self._init_params()
+
+    def _init_params(self, use_xavier: bool = True):
+        """
+        Comment for use_xavier=False:
+        Use of default embedding initialization N(0, 1)
+        For pre-softmax transformation makes norm of
+        Weights very big, thus make convergence slow
+        Comment for use_xavier=True:
+        It helped with convergence in my case.
+
+        Source: https://github.com/gordicaleksa/pytorch-original-transformer/blob/d5b29a41c5c3f68e1bcd0c528a58281632fa9d6d/models/definitions/transformer_model.py#L53
+        Not mentioned in the paper, but other implementations used xavier.
+        I tested both PyTorch's default initialization and this, and xavier has tremendous impact! I didn't expect
+        a model's perf, with normalization layers, to be so much dependent on the choice of weight initialization.
+        """
+        if use_xavier:
+            for _, p in self.named_parameters():
+                if p.dim() > 1:
+                    nn.init.xavier_uniform_(p)
+        else:
+            sqrt_k = 1 / self.sqrt_dmodel
+            nn.init.uniform_(self.src_embedding.weight, a=-sqrt_k, b=sqrt_k)
+            nn.init.uniform_(self.tgt_embedding.weight, a=-sqrt_k, b=sqrt_k)
+            nn.init.uniform_(self.vocab_bias, a=-sqrt_k, b=sqrt_k)
 
     def _proj(self, x):
-        """In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"""
+        """
+        3.4
+        In our model, we share the same weight matrix betweenthe two
+        embedding layers and the pre-softmax linear transformation
+        """
         return x @ self.tgt_embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
     
     def _encode(self, src, src_mask=None):
@@ -251,4 +272,5 @@ class Transformer(nn.Module):
                 break
 
             generated.append(generated_token.item())
+
         return torch.tensor(generated)
