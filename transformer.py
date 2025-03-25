@@ -161,7 +161,8 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,
-        vocab_size: int,
+        src_vocab_size: int,
+        tgt_vocab_size: int,
         n_encoder_blocks: int = 6,
         n_decoder_block: int = 6,
         n_encoder_heads: int = 8,
@@ -178,17 +179,21 @@ class Transformer(nn.Module):
         # Use of default embedding initialization N(0, 1)
         # For pre-softmax transformation makes norm of
         # Weights very big, thus make convergence slow
+
+        self.sqrt_dmodel = embed_size ** 0.5
         sqrt_k = (1 / embed_size) ** 0.5
-        self.embedding = nn.Embedding(vocab_size, embed_size)
-        nn.init.uniform_(self.embedding.weight, a=-sqrt_k, b=sqrt_k)
-        self.vocab_bias = nn.Parameter(torch.zeros(vocab_size))
+        self.src_embedding = nn.Embedding(src_vocab_size, embed_size)
+        self.tgt_embedding = nn.Embedding(tgt_vocab_size, embed_size)
+        nn.init.uniform_(self.src_embedding.weight, a=-sqrt_k, b=sqrt_k)
+        nn.init.uniform_(self.tgt_embedding.weight, a=-sqrt_k, b=sqrt_k)
+        self.vocab_bias = nn.Parameter(torch.zeros(tgt_vocab_size))
         nn.init.uniform_(self.vocab_bias, a=-sqrt_k, b=sqrt_k)
 
         self.dropout = nn.Dropout(p=0.1)
 
     def _proj(self, x):
         """In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"""
-        return x @ self.embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
+        return x @ self.tgt_embedding.weight.t() + self.vocab_bias  # (batch_size, seq_len, vocab_size)
     
     def _encode(self, src, src_mask=None):
         """
@@ -197,7 +202,9 @@ class Transformer(nn.Module):
         """
         if src_mask is not None:
             src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
-        src_embed = self.embedding(src)  # (batch_size, seq_len_src, embed_size)
+        src_embed = self.src_embedding(src)  # (batch_size, seq_len_src, embed_size)
+        # 3.4 In the embedding layers, we multiply those weights by √dmodel
+        src_embed *= self.sqrt_dmodel
         src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)  # (batch_size, seq_len_src, embed_size)
         src_embed = self.dropout(src_embed)  # (batch_size, seq_len_src, embed_size)
         memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
@@ -209,7 +216,9 @@ class Transformer(nn.Module):
         tgt - (batch_size, seq_len_tgt)
         src_mask - (batch_size, seq_len_src)
         """
-        tgt_embed = self.embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed = self.tgt_embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
+        # 3.4 In the embedding layers, we multiply those weights by √dmodel
+        tgt_embed *= self.sqrt_dmodel 
         tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)
         tgt_embed = self.dropout(tgt_embed)
         attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)

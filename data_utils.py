@@ -25,13 +25,13 @@ def load_data(data_path="train_data.txt"):
     return [example.split("\t") for example in data if "\t" in example]
 
 
-def get_data_batch_iterator(data, tokenizer, batch_size=16):
+def get_data_batch_iterator(data, src_tokenizer, tgt_tokenizer, batch_size=16):
     # TODO: generate batches with strategy to minimize number of pad tokens (pack texts with similar length together)
     for i in range(0, len(data), batch_size):
         batch_data = data[i:i+batch_size]
         src_data, tgt_data = zip(*batch_data)
-        src_encoding = tokenizer.encode_batch(src_data)
-        tgt_encoding = tokenizer.encode_batch(tgt_data)
+        src_encoding = src_tokenizer.encode_batch(src_data)
+        tgt_encoding = tgt_tokenizer.encode_batch(tgt_data)
 
         yield (
             torch.tensor([b.ids for b in src_encoding]),
