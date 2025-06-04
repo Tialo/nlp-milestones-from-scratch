@@ -1,5 +1,5 @@
 import os
-import json
+from itertools import islice
 
 import torch
 import torch.nn as nn
@@ -19,11 +19,14 @@ end_index = tgt_tokenizer.token_to_id("[END]")
 
 data = load_data("data.txt")
 
-TRAIN_SIZE = 50_000
-VAL_SIZE = 5_000
-EPOCHS = 30
-BATCH_SIZE = 64
+SAVE_BEST_MODEL = False
+TRAIN_SIZE = 100_000
+VAL_SIZE = 20_000
+EPOCHS = 20
+BASE_LR = 1.0
+BATCH_SIZE = 24
 WARMUP_STEPS = 3000
+ACCUMULATION_STEPS = 10
 
 assert TRAIN_SIZE + VAL_SIZE < len(data), f"Val dataset is truncated. Total samples {len(data)}, trying to use {TRAIN_SIZE + VAL_SIZE} samples"
 
@@ -37,6 +40,8 @@ task.connect({
     "warmup_steps": WARMUP_STEPS,
     "train_size": TRAIN_SIZE,
     "val_size": VAL_SIZE,
+    "accumulation_steps": ACCUMULATION_STEPS,
+    "base_lr": BASE_LR,
 })
 
 train_data = data[:TRAIN_SIZE]
@@ -53,31 +58,19 @@ def rate(step: int, d_model: int = 512, warmup: int = WARMUP_STEPS):
     step = max(step, 1)
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
-opt = torch.optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
+opt = torch.optim.Adam(model.parameters(), lr=BASE_LR, betas=(0.9, 0.98), eps=1e-9)
 scheduler = torch.optim.lr_scheduler.LambdaLR(
     opt,
     lr_lambda=rate,
 )
 
-if os.path.isfile("best_val_loss.txt"):
-    with open("best_val_loss.txt") as f:
-        best_val_loss = float(f.read())
-else:
-    best_val_loss = float('inf')
+best_val_loss = float('inf')
 
-train_loss_history = []
-val_loss_history = []
-
-for e in range(EPOCHS):
-    data_iterator = get_data_batch_iterator(
-        train_data,
-        src_tokenizer,
-        tgt_tokenizer,
-        batch_size=BATCH_SIZE,
-    )
+def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
     model.train()
+    epoch_loss_history = []
+    accumulated_loss = 0
 
-    epoch_train_loss_history = []
     for i, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
         data_iterator,
         total=len(train_data) // BATCH_SIZE,
@@ -91,52 +84,65 @@ for e in range(EPOCHS):
 
         logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
         loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
-        epoch_train_loss_history.append(loss.item())
+        # Normalize loss to account for accumulation
+        loss /= ACCUMULATION_STEPS
+        epoch_loss_history.append(loss.item() * ACCUMULATION_STEPS)
+        accumulated_loss += loss.item()
 
-        global_step = e * (len(train_data) // BATCH_SIZE) + i
-        task.logger.report_scalar("loss", "train_batch", loss.item(), global_step)
-        current_lr = scheduler.get_last_lr()[0]
-        task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
-
-        opt.zero_grad()
         loss.backward()
+
+        if (i + 1) % ACCUMULATION_STEPS == 0:
+            global_step = e * (len(train_data) // BATCH_SIZE // ACCUMULATION_STEPS) + i // ACCUMULATION_STEPS
+            task.logger.report_scalar("train_loss", "train_batch", accumulated_loss, global_step)
+            current_lr = scheduler.get_last_lr()[0]
+            task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
+
+            opt.step()
+            opt.zero_grad()
+            scheduler.step()
+            accumulated_loss = 0
+    
+    # Handle remaining gradients
+    if (i + 1) % ACCUMULATION_STEPS != 0:
         opt.step()
+        opt.zero_grad()
         scheduler.step()
 
-    epoch_train_loss_avg = sum(epoch_train_loss_history) / len(epoch_train_loss_history)
-    task.logger.report_scalar("loss", "train_epoch", epoch_train_loss_avg, e)
-    train_loss_history.append(epoch_train_loss_history)
+    return sum(epoch_loss_history) / len(epoch_loss_history)
 
-    data_iterator = get_data_batch_iterator(
-        val_data,
-        src_tokenizer,
-        tgt_tokenizer,
-        batch_size=2 * BATCH_SIZE,
-    )
+@torch.no_grad
+def validate_one_epoch(model, data_iterator, criterion, device):
     model.eval()
 
     epoch_val_loss_history = []
-    with torch.no_grad():
-        for src_tokens, tgt_tokens, src_mask in tqdm(
-            data_iterator,
-            total=len(val_data) // (2 * BATCH_SIZE),
-            desc=f"Val epoch {e}",
-        ):
-            src_tokens = src_tokens.to(device)
-            tgt_inputs = tgt_tokens[:, :-1].to(device)
-            tgt_labels = tgt_tokens[:, 1:].to(device)
-            src_mask = src_mask.to(device)
+    for src_tokens, tgt_tokens, src_mask in tqdm(
+        data_iterator,
+        total=len(val_data) // (2 * BATCH_SIZE),
+        desc=f"Val epoch {e}",
+    ):
+        src_tokens = src_tokens.to(device)
+        tgt_inputs = tgt_tokens[:, :-1].to(device)
+        tgt_labels = tgt_tokens[:, 1:].to(device)
+        src_mask = src_mask.to(device)
 
-            logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
-            loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
-            epoch_val_loss_history.append(loss.item())
+        logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
+        loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
+        epoch_val_loss_history.append(loss.item())
 
-        src_tokens, tgt_tokens, src_mask = next(get_data_batch_iterator(
-            val_data,
-            src_tokenizer,
-            tgt_tokenizer,
-            batch_size=1,
-        ))
+    val_batch_iterator = get_data_batch_iterator(
+        val_data,
+        src_tokenizer,
+        tgt_tokenizer,
+        batch_size=1,
+    )
+    train_batch_iterator = get_data_batch_iterator(
+        train_data,
+        src_tokenizer,
+        tgt_tokenizer,
+        batch_size=1,
+    )
+    for _ in range(2):
+        src_tokens, tgt_tokens, _ = next(val_batch_iterator)
         generated = model.generate(
             src_tokens.to(device),
             start_index,
@@ -144,34 +150,56 @@ for e in range(EPOCHS):
             # "We set the maximum output length during inference to input length + 50, but terminate early when possible"
             max_tokens=len(src_tokens) + 50,
         )
-        source_text = decode(src_tokenizer, src_tokens)
-        target_text = decode(tgt_tokenizer, tgt_tokens)
-        generated_text = decode(tgt_tokenizer, generated)
-        
-        print("Source:", source_text)
-        print("Target:", target_text)
-        print("Generated:", generated_text)
-        print()
 
-        task.logger.report_text(f"Source: {source_text}\nTarget: {target_text}\nGenerated: {generated_text}", "translation_examples")
+        task.logger.report_text(
+            "Validation example\n"
+            f"Source: {decode(src_tokenizer, src_tokens)}\n"
+            f"Target: {decode(tgt_tokenizer, tgt_tokens)}\n"
+            f"Generated: {decode(tgt_tokenizer, generated)}\n",
+            print_console=False,
+        )
+
+        src_tokens, tgt_tokens, _ = next(train_batch_iterator)
+        generated = model.generate(
+            src_tokens.to(device),
+            start_index,
+            end_index,
+            max_tokens=len(src_tokens) + 50,
+        )
+        task.logger.report_text(
+            "Train example\n"
+            f"Source: {decode(src_tokenizer, src_tokens)}\n"
+            f"Target: {decode(tgt_tokenizer, tgt_tokens)}\n"
+            f"Generated: {decode(tgt_tokenizer, generated)}\n",
+            print_console=False,
+        )
+
+    return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
 
-    val_loss = torch.tensor(epoch_val_loss_history).mean().item()
-    task.logger.report_scalar("loss", "validation", val_loss, e)
+for e in range(EPOCHS):
+    train_iterator = get_data_batch_iterator(
+        train_data,
+        src_tokenizer,
+        tgt_tokenizer,
+        batch_size=BATCH_SIZE,
+    )
+    epoch_train_loss_avg = train_one_epoch(model, train_iterator, criterion, opt, scheduler, device)
+    task.logger.report_scalar("train_loss", "train_epoch", epoch_train_loss_avg, e)
 
-    print(f"{val_loss=}, {best_val_loss=}", flush=True)
-    if val_loss < best_val_loss:
+    val_iterator = get_data_batch_iterator(
+        val_data,
+        src_tokenizer,
+        tgt_tokenizer,
+        batch_size=2 * BATCH_SIZE,
+    )
+
+    epoch_val_loss_avg = validate_one_epoch(model, val_iterator, criterion, device)
+    task.logger.report_scalar("val_loss", "val_epoch", epoch_val_loss_avg, e)
+
+    if SAVE_BEST_MODEL and epoch_val_loss_avg < best_val_loss:
+        best_val_loss = epoch_val_loss_avg
         torch.save(model.state_dict(), "best_model.pth")
-        with open("best_val_loss.txt", "w") as f:
-            f.write(str(val_loss))
-        best_val_loss = val_loss
         task.upload_artifact("best_model", artifact_object="best_model.pth")
-
-    val_loss_history.append(epoch_val_loss_history)
-
-
-with open("train_loss.json", "w") as f:
-    json.dump(train_loss_history, f)
-
-with open("val_loss.json", "w") as f:
-    json.dump(val_loss_history, f)
+    
+    torch.cuda.empty_cache()

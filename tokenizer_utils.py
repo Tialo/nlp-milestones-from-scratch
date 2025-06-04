@@ -49,7 +49,7 @@ def decode(tokenizer, sequence):
                 raise ValueError("Can't handle 2D tensor in decode with 1st dimension > 1")
             sequence = sequence[0]
         sequence = sequence.tolist()
-    return tokenizer.decode(sequence)
+    return tokenizer.decode(sequence, skip_special_tokens=False)
 
 
 if __name__ == '__main__':

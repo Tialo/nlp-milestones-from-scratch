@@ -40,7 +40,7 @@ class ScaledDotProductAttention(nn.Module):
         if mask is not None:
             attn_weights = attn_weights.masked_fill(mask[:, torch.newaxis] == 0, neg_inf)
         attn_weights = torch.softmax(attn_weights, dim=-1)
-        # attn_weights = self.dropout(attn_weights) 
+        attn_weights = self.dropout(attn_weights)
         return attn_weights @ v  # (batch_size, n_heads, seq_len_kv, d_v)
 
 
@@ -79,8 +79,8 @@ class MultiHeadAttention(nn.Module):
         v = v.view(batch_size, self.n_heads, v.size(1), self.head_dim)
 
         attentions = self.sdpa(q, k, v, mask=mask)  # (batch_size, n_heads, seq_len_v, head_dim)
-        # .contiguous() often used here
-        return self.proj(attentions.view(batch_size, seq_len_q, self.embed_size))  # (batch_size, seq_len_q, embed_size)
+        attentions = attentions.view(batch_size, seq_len_q, self.embed_size).contiguous()
+        return self.proj(attentions)  # (batch_size, seq_len_q, embed_size)
 
 
 class FeedForward(nn.Module):
@@ -89,7 +89,8 @@ class FeedForward(nn.Module):
         self.ff = nn.Sequential(
             nn.Linear(d_out, d_ff),
             nn.ReLU(),
-            nn.Dropout(p=0.1),  # AIAYN didn't ask for this
+            # it was not mentioned in original paper
+            nn.Dropout(p=0.1),
             nn.Linear(d_ff, d_out)
         )
 
@@ -177,6 +178,7 @@ class Transformer(nn.Module):
         self.decoder = Decoder(n_decoder_block, n_decoder_heads, embed_size, d_ff)
 
         self.sqrt_dmodel = embed_size ** 0.5
+        # original paper used shared embedding layer for source and target
         self.src_embedding = nn.Embedding(src_vocab_size, embed_size)
         self.tgt_embedding = nn.Embedding(tgt_vocab_size, embed_size)
         self.vocab_bias = nn.Parameter(torch.zeros(tgt_vocab_size))
