@@ -1,3 +1,4 @@
+import os
 import random
 
 import torch
@@ -7,7 +8,7 @@ from tqdm.auto import tqdm
 
 from transformer import Transformer
 from loss import LabelSmoothingLoss
-from tokenizer_utils import get_tokenizer, decode
+from tokenizer_utils import get_tokenizer, decode, build_tokenizers
 from data_utils import get_data_batch_iterator, load_data
 
 
@@ -24,19 +25,23 @@ def set_seed(seed: int | None = 42):
 
 set_seed(42)
 
-src_tokenizer = get_tokenizer("tokenizer_src.json")
-tgt_tokenizer = get_tokenizer("tokenizer_tgt.json")
+
+if not (os.path.isfile("tokenizer_src.json") and os.path.isfile("tokenizer_tgt.json")):
+    src_tokenizer, tgt_tokenizer = build_tokenizers(load_data("raw"))
+else:
+    src_tokenizer = get_tokenizer("tokenizer_src.json")
+    tgt_tokenizer = get_tokenizer("tokenizer_tgt.json")
 
 pad_index = tgt_tokenizer.token_to_id("[PAD]")
 start_index = tgt_tokenizer.token_to_id("[START]")
 end_index = tgt_tokenizer.token_to_id("[END]")
 
-data = load_data(split="raw")
+data = load_data("raw")
 
 SAVE_BEST_MODEL = False
 TRAIN_FRACTION = 0.8
 EPOCHS = 8
-BASE_LR = 1
+BASE_LR = 0.9
 BATCH_SIZE = 96
 # original paper used 4% of data for a warmup
 WARMUP_FRACTION = 0.3
