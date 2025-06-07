@@ -7,12 +7,15 @@ from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.decoders import BPEDecoder
 
-def _build_tokenizer(data: list[str], save_path: str):
+
+def build_tokenizer(data: list[list[str]], save_path: str):
+    language_src, language_tgt = zip(*data)
+    data = language_src + language_tgt
     tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
     tokenizer.pre_tokenizer = Whitespace()
     tokenizer.normalizer = Sequence([NFKD(), StripAccents()])
     trainer = BpeTrainer(
-        vocab_size=4_096,
+        vocab_size=8192,
         min_frequency=2,
         special_tokens=["[UNK]", "[PAD]", "[START]", "[END]"],
         end_of_word_suffix="</w>",
@@ -30,13 +33,6 @@ def _build_tokenizer(data: list[str], save_path: str):
     tokenizer.decoder = BPEDecoder()
     tokenizer.save(save_path)
     return tokenizer
-
-
-def build_tokenizers(splitted_data):
-    language_src, language_tgt = zip(*splitted_data)
-    src_tokenizer = _build_tokenizer(language_src, "tokenizer_src.json")
-    tgt_tokenizer = _build_tokenizer(language_tgt, "tokenizer_tgt.json")
-    return src_tokenizer, tgt_tokenizer
 
 
 def get_tokenizer(tokenizer_path: str):

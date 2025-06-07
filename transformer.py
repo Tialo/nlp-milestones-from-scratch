@@ -257,8 +257,7 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,
-        src_vocab_size: int,
-        tgt_vocab_size: int,
+        vocab_size: int,
         n_encoder_layers: int = 6,
         n_decoder_layers: int = 6,
         n_encoder_heads: int = 8,
@@ -296,15 +295,14 @@ class Transformer(nn.Module):
 
         self.sqrt_dmodel = embed_size ** 0.5
         # original paper used shared embedding layer for source and target
-        self.src_embedding = nn.Embedding(src_vocab_size, embed_size)
-        self.tgt_embedding = nn.Embedding(tgt_vocab_size, embed_size)
-        self.fc = nn.Linear(embed_size, tgt_vocab_size)
+        self.embeddings = nn.Embedding(vocab_size, embed_size)
+        self.fc = nn.Linear(embed_size, vocab_size)
 
         # 3.4 In our model, we share the same weight matrix between the two
         # embedding layers and the pre-softmax linear transformation
         # see also https://paperswithcode.com/method/weight-tying
         if tie_embeddings:
-            self.tgt_embedding.weight = self.fc.weight
+            self.embeddings.weight = self.fc.weight
 
         # 5.4 we apply dropout to the sums of the embeddings and the positional encodings
         self.dropout = nn.Dropout(p=0.1)
@@ -323,7 +321,7 @@ class Transformer(nn.Module):
         """
         if src_mask is not None:
             src_mask = src_mask[:, torch.newaxis]  # (batch_size, 1, seq_len_src)
-        src_embed = self.src_embedding(src)  # (batch_size, seq_len_src, embed_size)
+        src_embed = self.embeddings(src)  # (batch_size, seq_len_src, embed_size)
         # 3.4 In the embedding layers, we multiply those weights by √dmodel
         src_embed *= self.sqrt_dmodel
         src_embed += self.pos_enc[:src.size(1)].to(src_embed.device)  # (batch_size, seq_len_src, embed_size)
@@ -337,7 +335,7 @@ class Transformer(nn.Module):
         tgt - (batch_size, seq_len_tgt)
         src_mask - (batch_size, seq_len_src)
         """
-        tgt_embed = self.tgt_embedding(tgt)  # (batch_size, seq_len_tgt, embed_size)
+        tgt_embed = self.embeddings(tgt)  # (batch_size, seq_len_tgt, embed_size)
         # 3.4 In the embedding layers, we multiply those weights by √dmodel
         tgt_embed *= self.sqrt_dmodel
         tgt_embed += self.pos_enc[:tgt.size(1)].to(tgt_embed.device)

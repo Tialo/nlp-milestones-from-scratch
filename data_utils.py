@@ -19,12 +19,12 @@ def load_data(split: Literal["simplified", "raw"] = "simplified"):
     return data
 
 
-def get_data_batch_iterator(data, src_tokenizer, tgt_tokenizer, batch_size: int = 16):
+def get_data_batch_iterator(data, tokenizer, batch_size: int = 16):
     for i in range(0, len(data), batch_size):
         batch_data = data[i:i+batch_size]
         src_data, tgt_data = zip(*batch_data)
-        src_encoding = src_tokenizer.encode_batch(src_data)
-        tgt_encoding = tgt_tokenizer.encode_batch(tgt_data)
+        src_encoding = tokenizer.encode_batch(src_data)
+        tgt_encoding = tokenizer.encode_batch(tgt_data)
 
         yield (
             torch.tensor([b.ids for b in src_encoding]),

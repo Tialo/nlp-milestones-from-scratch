@@ -8,7 +8,7 @@ from tqdm.auto import tqdm
 
 from transformer import Transformer
 from loss import LabelSmoothingLoss
-from tokenizer_utils import get_tokenizer, decode, build_tokenizers
+from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
@@ -26,15 +26,14 @@ def set_seed(seed: int | None = 42):
 set_seed(42)
 
 
-if not (os.path.isfile("tokenizer_src.json") and os.path.isfile("tokenizer_tgt.json")):
-    src_tokenizer, tgt_tokenizer = build_tokenizers(load_data("raw"))
+if not os.path.isfile("tokenizer.json"):
+    tokenizer = build_tokenizer(load_data("raw"), save_path="tokenizer.json")
 else:
-    src_tokenizer = get_tokenizer("tokenizer_src.json")
-    tgt_tokenizer = get_tokenizer("tokenizer_tgt.json")
+    tokenizer = get_tokenizer("tokenizer.json")
 
-pad_index = tgt_tokenizer.token_to_id("[PAD]")
-start_index = tgt_tokenizer.token_to_id("[START]")
-end_index = tgt_tokenizer.token_to_id("[END]")
+pad_index = tokenizer.token_to_id("[PAD]")
+start_index = tokenizer.token_to_id("[START]")
+end_index = tokenizer.token_to_id("[END]")
 
 data = load_data("raw")
 
@@ -69,8 +68,7 @@ warmup_steps = int(all_steps * WARMUP_FRACTION)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Transformer(
-    src_tokenizer.get_vocab_size(),
-    tgt_tokenizer.get_vocab_size(),
+    tokenizer.get_vocab_size(),
 ).to(device)
 
 
@@ -156,14 +154,7 @@ def validate_one_epoch(model, data_iterator, criterion, device):
 
     val_batch_iterator = get_data_batch_iterator(
         val_data,
-        src_tokenizer,
-        tgt_tokenizer,
-        batch_size=1,
-    )
-    train_batch_iterator = get_data_batch_iterator(
-        train_data,
-        src_tokenizer,
-        tgt_tokenizer,
+        tokenizer,
         batch_size=1,
     )
     for _ in range(4):
@@ -178,9 +169,9 @@ def validate_one_epoch(model, data_iterator, criterion, device):
 
         task.logger.report_text(
             "Validation example\n"
-            f"Source: {decode(src_tokenizer, src_tokens)}\n"
-            f"Target: {decode(tgt_tokenizer, tgt_tokens)}\n"
-            f"Generated: {decode(tgt_tokenizer, generated)}\n",
+            f"Source: {decode(tokenizer, src_tokens)}\n"
+            f"Target: {decode(tokenizer, tgt_tokens)}\n"
+            f"Generated: {decode(tokenizer, generated)}\n\n",
             print_console=False,
         )
 
@@ -190,8 +181,7 @@ def validate_one_epoch(model, data_iterator, criterion, device):
 for e in range(EPOCHS):
     train_iterator = get_data_batch_iterator(
         train_data,
-        src_tokenizer,
-        tgt_tokenizer,
+        tokenizer,
         batch_size=BATCH_SIZE,
     )
     epoch_train_loss_avg = train_one_epoch(model, train_iterator, criterion, opt, scheduler, device)
@@ -199,8 +189,7 @@ for e in range(EPOCHS):
 
     val_iterator = get_data_batch_iterator(
         val_data,
-        src_tokenizer,
-        tgt_tokenizer,
+        tokenizer,
         batch_size=2 * BATCH_SIZE,
     )
 
