@@ -1,14 +1,28 @@
-import os
-from itertools import islice
+import random
 
 import torch
-import torch.nn as nn
+import numpy as np
 from clearml import Task
 from tqdm.auto import tqdm
 
 from transformer import Transformer
+from loss import LabelSmoothingLoss
 from tokenizer_utils import get_tokenizer, decode
 from data_utils import get_data_batch_iterator, load_data
+
+
+def set_seed(seed: int | None = 42):
+    if seed is None:
+        return
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+set_seed(42)
 
 src_tokenizer = get_tokenizer("tokenizer_src.json")
 tgt_tokenizer = get_tokenizer("tokenizer_tgt.json")
@@ -17,18 +31,16 @@ pad_index = tgt_tokenizer.token_to_id("[PAD]")
 start_index = tgt_tokenizer.token_to_id("[START]")
 end_index = tgt_tokenizer.token_to_id("[END]")
 
-data = load_data("data.txt")
+data = load_data(split="raw")
 
 SAVE_BEST_MODEL = False
-TRAIN_SIZE = 100_000
-VAL_SIZE = 20_000
-EPOCHS = 20
-BASE_LR = 1.0
-BATCH_SIZE = 24
-WARMUP_STEPS = 3000
+TRAIN_FRACTION = 0.8
+EPOCHS = 8
+BASE_LR = 1
+BATCH_SIZE = 96
+WARMUP_FRACTION = 0.1
 ACCUMULATION_STEPS = 10
-
-assert TRAIN_SIZE + VAL_SIZE < len(data), f"Val dataset is truncated. Total samples {len(data)}, trying to use {TRAIN_SIZE + VAL_SIZE} samples"
+LABEL_SMOOTHING = 0.1
 
 task = Task.init(
     project_name="vanilla-transformer",
@@ -37,24 +49,32 @@ task = Task.init(
 task.connect({
     "batch_size": BATCH_SIZE,
     "epochs": EPOCHS,
-    "warmup_steps": WARMUP_STEPS,
-    "train_size": TRAIN_SIZE,
-    "val_size": VAL_SIZE,
+    "warmup_fraction": WARMUP_FRACTION,
+    "train_fraction": TRAIN_FRACTION,
     "accumulation_steps": ACCUMULATION_STEPS,
     "base_lr": BASE_LR,
 })
 
-train_data = data[:TRAIN_SIZE]
-val_data = data[TRAIN_SIZE:TRAIN_SIZE + VAL_SIZE]
+train_size = int(len(data) * TRAIN_FRACTION)
+train_data = data[:train_size]
+val_data = data[train_size:]
+all_steps = len(train_data) * EPOCHS // (BATCH_SIZE * ACCUMULATION_STEPS)
+warmup_steps = int(all_steps * WARMUP_FRACTION)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Transformer(
     src_tokenizer.get_vocab_size(),
     tgt_tokenizer.get_vocab_size(),
 ).to(device)
-criterion = nn.CrossEntropyLoss(ignore_index=pad_index)
 
-def rate(step: int, d_model: int = 512, warmup: int = WARMUP_STEPS):
+
+criterion = LabelSmoothingLoss(
+    ignore_index=pad_index,
+    smoothing=LABEL_SMOOTHING,
+)
+
+
+def rate(step: int, d_model: int = 512, warmup: int = warmup_steps):
     step = max(step, 1)
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
@@ -64,7 +84,6 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
     lr_lambda=rate,
 )
 
-best_val_loss = float('inf')
 
 def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
     model.train()
@@ -76,24 +95,28 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
         total=len(train_data) // BATCH_SIZE,
         desc=f"Train epoch {e}",
     )):
-        # TODO: add label smoothing
-        src_tokens = src_tokens.to(device)
-        tgt_inputs = tgt_tokens[:, :-1].to(device)
-        tgt_labels = tgt_tokens[:, 1:].to(device)
+        src_tokens = src_tokens.to(device)  # (batch_size, seq_len_src)
+        tgt_inputs = tgt_tokens[:, :-1].to(device)  # (batch_size, seq_len_tgt - 1)
+        tgt_labels = tgt_tokens[:, 1:].to(device)  # (batch_size, seq_len_tgt - 1)
         src_mask = src_mask.to(device)
 
-        logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
-        loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
+        logits = model(src_tokens, tgt_inputs, src_mask=src_mask)  # (batch_size, seq_len_tgt, vocab_size)
+        loss = criterion(
+            logits.view(-1, logits.size(-1)),
+            tgt_labels.view(-1),
+        )
+        epoch_loss_history.append(loss.item())
         # Normalize loss to account for accumulation
-        loss /= ACCUMULATION_STEPS
-        epoch_loss_history.append(loss.item() * ACCUMULATION_STEPS)
+        # loss /= ACCUMULATION_STEPS
         accumulated_loss += loss.item()
 
+        # use full loss for backward pass, dont normalize it by ACCUMULATION_STEPS
         loss.backward()
 
         if (i + 1) % ACCUMULATION_STEPS == 0:
             global_step = e * (len(train_data) // BATCH_SIZE // ACCUMULATION_STEPS) + i // ACCUMULATION_STEPS
-            task.logger.report_scalar("train_loss", "train_batch", accumulated_loss, global_step)
+            # log mean of accumulated loss
+            task.logger.report_scalar("step_loss", "train", accumulated_loss / ACCUMULATION_STEPS, global_step)
             current_lr = scheduler.get_last_lr()[0]
             task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
 
@@ -101,7 +124,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
             opt.zero_grad()
             scheduler.step()
             accumulated_loss = 0
-    
+
     # Handle remaining gradients
     if (i + 1) % ACCUMULATION_STEPS != 0:
         opt.step()
@@ -147,7 +170,7 @@ def validate_one_epoch(model, data_iterator, criterion, device):
             src_tokens.to(device),
             start_index,
             end_index,
-            # "We set the maximum output length during inference to input length + 50, but terminate early when possible"
+            # 6.1 We set the maximum output length during inference to input length + 50, but terminate early when possible
             max_tokens=len(src_tokens) + 50,
         )
 
@@ -185,7 +208,7 @@ for e in range(EPOCHS):
         batch_size=BATCH_SIZE,
     )
     epoch_train_loss_avg = train_one_epoch(model, train_iterator, criterion, opt, scheduler, device)
-    task.logger.report_scalar("train_loss", "train_epoch", epoch_train_loss_avg, e)
+    task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
 
     val_iterator = get_data_batch_iterator(
         val_data,
@@ -195,11 +218,9 @@ for e in range(EPOCHS):
     )
 
     epoch_val_loss_avg = validate_one_epoch(model, val_iterator, criterion, device)
-    task.logger.report_scalar("val_loss", "val_epoch", epoch_val_loss_avg, e)
-
-    if SAVE_BEST_MODEL and epoch_val_loss_avg < best_val_loss:
-        best_val_loss = epoch_val_loss_avg
-        torch.save(model.state_dict(), "best_model.pth")
-        task.upload_artifact("best_model", artifact_object="best_model.pth")
+    task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
     
     torch.cuda.empty_cache()
+
+
+torch.save(model.state_dict(), "model.pth")

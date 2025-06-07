@@ -6,25 +6,20 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 
-from data_utils import download_data
+from data_utils import load_data
 
 
 def _build_tokenizer(data: list[str], save_path: str):
     tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-    trainer = BpeTrainer(special_tokens=["[UNK]", "[PAD]", "[START]", "[END]"])
+    trainer = BpeTrainer(vocab_size=4_096, min_frequency=2, special_tokens=["[UNK]", "[PAD]", "[START]", "[END]"])
     tokenizer.pre_tokenizer = Whitespace()
     tokenizer.train_from_iterator(data, trainer)
     tokenizer.save(save_path)
 
 
-def build_tokenizers(data_path: str):
-    download_data(save_path=data_path)
-    with open(data_path) as f:
-        data = f.read().splitlines()
-    
-    splitted_data = (row.split("\t") for row in data)
-    # Some rows have 1 or 0 sequences
-    language_src, language_tgt = zip(*[row for row in splitted_data if len(row) == 2])
+def build_tokenizers():
+    splitted_data = load_data()
+    language_src, language_tgt = zip(*splitted_data)
     _build_tokenizer(language_src, "tokenizer_src.json")
     _build_tokenizer(language_tgt, "tokenizer_tgt.json")
 
@@ -38,7 +33,8 @@ def get_tokenizer(tokenizer_path: str):
             ("[END]", tokenizer.token_to_id("[END]")),
         ],
     )
-    tokenizer.enable_padding()
+    tokenizer.enable_padding(pad_id=tokenizer.token_to_id("[PAD]"))
+    tokenizer.enable_truncation(72)
     return tokenizer
 
 
@@ -53,4 +49,4 @@ def decode(tokenizer, sequence):
 
 
 if __name__ == '__main__':
-    build_tokenizers("data.txt")
+    build_tokenizers()

@@ -3,3 +3,4 @@ tqdm
 tokenizers
 numpy
 clearml
+datasets
