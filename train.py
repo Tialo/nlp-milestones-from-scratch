@@ -38,7 +38,8 @@ TRAIN_FRACTION = 0.8
 EPOCHS = 8
 BASE_LR = 1
 BATCH_SIZE = 96
-WARMUP_FRACTION = 0.1
+# original paper used 4% of data for a warmup
+WARMUP_FRACTION = 0.3
 ACCUMULATION_STEPS = 10
 LABEL_SMOOTHING = 0.1
 
@@ -106,11 +107,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
             tgt_labels.view(-1),
         )
         epoch_loss_history.append(loss.item())
-        # Normalize loss to account for accumulation
-        # loss /= ACCUMULATION_STEPS
         accumulated_loss += loss.item()
-
-        # use full loss for backward pass, dont normalize it by ACCUMULATION_STEPS
         loss.backward()
 
         if (i + 1) % ACCUMULATION_STEPS == 0:
@@ -164,7 +161,7 @@ def validate_one_epoch(model, data_iterator, criterion, device):
         tgt_tokenizer,
         batch_size=1,
     )
-    for _ in range(2):
+    for _ in range(4):
         src_tokens, tgt_tokens, _ = next(val_batch_iterator)
         generated = model.generate(
             src_tokens.to(device),
@@ -176,21 +173,6 @@ def validate_one_epoch(model, data_iterator, criterion, device):
 
         task.logger.report_text(
             "Validation example\n"
-            f"Source: {decode(src_tokenizer, src_tokens)}\n"
-            f"Target: {decode(tgt_tokenizer, tgt_tokens)}\n"
-            f"Generated: {decode(tgt_tokenizer, generated)}\n",
-            print_console=False,
-        )
-
-        src_tokens, tgt_tokens, _ = next(train_batch_iterator)
-        generated = model.generate(
-            src_tokens.to(device),
-            start_index,
-            end_index,
-            max_tokens=len(src_tokens) + 50,
-        )
-        task.logger.report_text(
-            "Train example\n"
             f"Source: {decode(src_tokenizer, src_tokens)}\n"
             f"Target: {decode(tgt_tokenizer, tgt_tokens)}\n"
             f"Generated: {decode(tgt_tokenizer, generated)}\n",

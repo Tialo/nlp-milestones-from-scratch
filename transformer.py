@@ -60,7 +60,7 @@ class ScaledDotProductAttention(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, n_heads: int, embed_size: int, use_dropout_in_spda: bool = False):
+    def __init__(self, n_heads: int, embed_size: int, use_additional_dropout: bool = False):
         super().__init__()
         assert embed_size % n_heads == 0
 
@@ -73,7 +73,7 @@ class MultiHeadAttention(nn.Module):
         self.v_weights = nn.Linear(embed_size, embed_size)
         self.proj = nn.Linear(embed_size, embed_size)
 
-        self.sdpa = ScaledDotProductAttention(use_dropout=use_dropout_in_spda)
+        self.sdpa = ScaledDotProductAttention(use_dropout=use_additional_dropout)
 
     def forward(self, q, k, v, mask=None):
         """
@@ -126,12 +126,11 @@ class EncoderLayer(nn.Module):
         embed_size: int,
         d_ff: int,
         post_ln: bool = True,
-        use_dropout_in_ff: bool = False,
-        use_dropout_in_sdpa: bool = False,
+        use_additional_dropout: bool = False,
     ):
         super().__init__()
-        self.ff = FeedForward(embed_size, d_ff, use_dropout=use_dropout_in_ff)
-        self.mha = MultiHeadAttention(n_heads, embed_size, use_dropout_in_spda=use_dropout_in_sdpa)
+        self.ff = FeedForward(embed_size, d_ff, use_dropout=use_additional_dropout)
+        self.mha = MultiHeadAttention(n_heads, embed_size, use_additional_dropout=use_additional_dropout)
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
         # 5.4 We apply dropout to the output of each sub-layer, before it is added to the sub-layer input and normalized
@@ -162,12 +161,11 @@ class Encoder(nn.Module):
         d_ff: int,
         post_ln: bool = True,
         final_ln: bool = False,
-        use_dropout_in_ff: bool = False,
-        use_dropout_in_sdpa: bool = False,
+        use_additional_dropout: bool = False,
     ):
         super().__init__()
         self.encoder_layers = nn.ModuleList([
-            EncoderLayer(n_heads, embed_size, d_ff, post_ln=post_ln, use_dropout_in_ff=use_dropout_in_ff, use_dropout_in_sdpa=use_dropout_in_sdpa) for _ in range(n_layers)
+            EncoderLayer(n_heads, embed_size, d_ff, post_ln=post_ln, use_additional_dropout=use_additional_dropout) for _ in range(n_layers)
         ])
         self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
 
@@ -189,13 +187,12 @@ class DecoderLayer(nn.Module):
         embed_size: int,
         d_ff: int,
         post_ln: bool = True,
-        use_dropout_in_ff: bool = False,
-        use_dropout_in_sdpa: bool = False,
+        use_additional_dropout: bool = False,
     ):
         super().__init__()
-        self.ff = FeedForward(embed_size, d_ff, use_dropout=use_dropout_in_ff)
-        self.mha = MultiHeadAttention(n_heads, embed_size, use_dropout_in_spda=use_dropout_in_sdpa)
-        self.mmha = MultiHeadAttention(n_heads, embed_size, use_dropout_in_spda=use_dropout_in_sdpa)
+        self.ff = FeedForward(embed_size, d_ff, use_dropout=use_additional_dropout)
+        self.mha = MultiHeadAttention(n_heads, embed_size, use_additional_dropout=use_additional_dropout)
+        self.mmha = MultiHeadAttention(n_heads, embed_size, use_additional_dropout=use_additional_dropout)
         self.ln1 = nn.LayerNorm(embed_size)
         self.ln2 = nn.LayerNorm(embed_size)
         self.ln3 = nn.LayerNorm(embed_size)
@@ -233,12 +230,11 @@ class Decoder(nn.Module):
         d_ff: int,
         post_ln: bool = True,
         final_ln: bool = False,
-        use_dropout_in_ff: bool = False,
-        use_dropout_in_sdpa: bool = False,
+        use_additional_dropout: bool = False,
     ):
         super().__init__()
         self.decoder_layers = nn.ModuleList([
-            DecoderLayer(n_heads, embed_size, d_ff, post_ln=post_ln, use_dropout_in_ff=use_dropout_in_ff, use_dropout_in_sdpa=use_dropout_in_sdpa) for _ in range(n_layers)
+            DecoderLayer(n_heads, embed_size, d_ff, post_ln=post_ln, use_additional_dropout=use_additional_dropout) for _ in range(n_layers)
         ])
         self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
 
@@ -273,8 +269,7 @@ class Transformer(nn.Module):
         tie_embeddings: bool = True,
         post_ln: bool = True,
         add_two_layer_norms: bool = False,
-        use_dropout_in_ff: bool = False,
-        use_dropout_in_sdpa: bool = False,
+        use_additional_dropout: bool = False,
         xavier_initialization: bool = False,
     ):
         super().__init__()
@@ -287,8 +282,7 @@ class Transformer(nn.Module):
             d_ff,
             post_ln=post_ln,
             final_ln=add_two_layer_norms,
-            use_dropout_in_ff=use_dropout_in_ff,
-            use_dropout_in_sdpa=use_dropout_in_sdpa,
+            use_additional_dropout=use_additional_dropout,
         )
         self.decoder = Decoder(
             n_decoder_layers,
@@ -297,8 +291,7 @@ class Transformer(nn.Module):
             d_ff,
             post_ln=post_ln,
             final_ln=add_two_layer_norms,
-            use_dropout_in_ff=use_dropout_in_ff,
-            use_dropout_in_sdpa=use_dropout_in_sdpa,
+            use_additional_dropout=use_additional_dropout,
         )
 
         self.sqrt_dmodel = embed_size ** 0.5
