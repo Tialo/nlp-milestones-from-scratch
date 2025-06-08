@@ -6,6 +6,7 @@ import numpy as np
 from clearml import Task
 from tqdm.auto import tqdm
 
+from generator import Generator
 from transformer import Transformer
 from loss import LabelSmoothingLoss
 from tokenizer_utils import get_tokenizer, decode, build_tokenizer
@@ -24,24 +25,12 @@ def set_seed(seed: int | None = 42):
 
 
 set_seed(42)
-
-
-if not os.path.isfile("tokenizer.json"):
-    tokenizer = build_tokenizer(load_data("raw"), save_path="tokenizer.json")
-else:
-    tokenizer = get_tokenizer("tokenizer.json")
-
-pad_index = tokenizer.token_to_id("[PAD]")
-start_index = tokenizer.token_to_id("[START]")
-end_index = tokenizer.token_to_id("[END]")
-
 data = load_data("raw")
 
-SAVE_BEST_MODEL = False
 TRAIN_FRACTION = 0.8
 EPOCHS = 8
-BASE_LR = 0.9
-BATCH_SIZE = 96
+BASE_LR = 0.8
+BATCH_SIZE = 128
 # original paper used 4% of data for a warmup
 WARMUP_FRACTION = 0.3
 ACCUMULATION_STEPS = 10
@@ -63,17 +52,31 @@ task.connect({
 train_size = int(len(data) * TRAIN_FRACTION)
 train_data = data[:train_size]
 val_data = data[train_size:]
-all_steps = len(train_data) * EPOCHS // (BATCH_SIZE * ACCUMULATION_STEPS)
-warmup_steps = int(all_steps * WARMUP_FRACTION)
+
+train_epoch_batches = (train_size + BATCH_SIZE - 1) // BATCH_SIZE
+train_epoch_steps = (train_epoch_batches + ACCUMULATION_STEPS - 1) // ACCUMULATION_STEPS
+train_steps = train_epoch_steps * EPOCHS
+global_step = 0
+warmup_steps = int(train_steps * WARMUP_FRACTION)
+
+if not os.path.isfile("tokenizer.json"):
+    tokenizer = build_tokenizer(train_data, save_path="tokenizer.json")
+else:
+    tokenizer = get_tokenizer("tokenizer.json")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = Transformer(
     tokenizer.get_vocab_size(),
 ).to(device)
+generator = Generator(
+    model,
+    tokenizer.token_to_id("[START]"),
+    tokenizer.token_to_id("[END]"),
+)
 
 
 criterion = LabelSmoothingLoss(
-    ignore_index=pad_index,
+    ignore_index=tokenizer.token_to_id("[PAD]"),
     smoothing=LABEL_SMOOTHING,
 )
 
@@ -90,13 +93,15 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
 
 
 def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
+    global global_step
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
+    backwards_since_last_step = 0
 
-    for i, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
+    for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
         data_iterator,
-        total=len(train_data) // BATCH_SIZE,
+        total=train_epoch_batches,
         desc=f"Train epoch {e}",
     )):
         src_tokens = src_tokens.to(device)  # (batch_size, seq_len_src)
@@ -112,11 +117,14 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
         epoch_loss_history.append(loss.item())
         accumulated_loss += loss.item()
         loss.backward()
+        backwards_since_last_step += 1
 
-        if (i + 1) % ACCUMULATION_STEPS == 0:
-            global_step = e * (len(train_data) // BATCH_SIZE // ACCUMULATION_STEPS) + i // ACCUMULATION_STEPS
+        if (
+            (batch_index + 1) % ACCUMULATION_STEPS == 0
+            or batch_index + 1 == train_epoch_batches
+        ):
             # log mean of accumulated loss
-            task.logger.report_scalar("step_loss", "train", accumulated_loss / ACCUMULATION_STEPS, global_step)
+            task.logger.report_scalar("step_loss", "train", accumulated_loss / backwards_since_last_step, global_step)
             current_lr = scheduler.get_last_lr()[0]
             task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
 
@@ -124,12 +132,8 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
             opt.zero_grad()
             scheduler.step()
             accumulated_loss = 0
-
-    # Handle remaining gradients
-    if (i + 1) % ACCUMULATION_STEPS != 0:
-        opt.step()
-        opt.zero_grad()
-        scheduler.step()
+            backwards_since_last_step = 0
+            global_step += 1
 
     return sum(epoch_loss_history) / len(epoch_loss_history)
 
@@ -159,10 +163,8 @@ def validate_one_epoch(model, data_iterator, criterion, device):
     )
     for _ in range(4):
         src_tokens, tgt_tokens, _ = next(val_batch_iterator)
-        generated = model.generate(
+        generated = generator.generate(
             src_tokens.to(device),
-            start_index,
-            end_index,
             # 6.1 We set the maximum output length during inference to input length + 50, but terminate early when possible
             max_tokens=len(src_tokens) + 50,
         )
@@ -195,7 +197,7 @@ for e in range(EPOCHS):
 
     epoch_val_loss_avg = validate_one_epoch(model, val_iterator, criterion, device)
     task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
-    
+
     torch.cuda.empty_cache()
 
 

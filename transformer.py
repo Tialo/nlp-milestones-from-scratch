@@ -1,6 +1,3 @@
-"""
-https://arxiv.org/pdf/1706.03762
-"""
 import math
 
 import torch
@@ -314,7 +311,7 @@ class Transformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def _encode(self, src, src_mask=None):
+    def encode(self, src, src_mask=None):
         """
         src - (batch_size, seq_len_src)
         src_mask - (batch_size, seq_len_src)
@@ -329,7 +326,7 @@ class Transformer(nn.Module):
         memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
         return memory, src_mask
 
-    def _decode(self, memory, tgt, src_mask=None):
+    def decode(self, memory, tgt, src_mask=None):
         """
         memory - (batch_size, seq_len_src, embed_size)
         tgt - (batch_size, seq_len_tgt)
@@ -349,26 +346,5 @@ class Transformer(nn.Module):
         tgt - (batch_size, seq_len_tgt)
         src_mask - (batch_size, seq_len_src)
         """
-        memory, src_mask = self._encode(src, src_mask)
-        return self._decode(memory, tgt, src_mask)  # (batch_size, seq_len_tgt, vocab_size)
-
-    @torch.no_grad
-    def generate(self, src, start_token: int, eos_token: int, max_tokens: int = 20):
-        if src.dim() == 1:
-            src = src.unsqueeze(0)
-        elif src.size(0) != 1:
-            raise ValueError("batch_size > 1 is not supported...")
-        memory, _ = self._encode(src)
-        generated = [start_token]
-
-        for _ in range(max_tokens):
-            logits = self._decode(memory, torch.tensor([generated]).to(src.device))
-            # original paper used beam search
-            generated_token = logits[:, -1].argmax()
-
-            if generated_token == eos_token:
-                break
-
-            generated.append(generated_token.item())
-
-        return torch.tensor(generated)
+        memory, src_mask = self.encode(src, src_mask)
+        return self.decode(memory, tgt, src_mask)  # (batch_size, seq_len_tgt, vocab_size)
