@@ -4,3 +4,4 @@ tokenizers
 numpy
 clearml
 datasets
+evaluate
