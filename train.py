@@ -1,5 +1,6 @@
 import os
 import random
+from dataclasses import dataclass
 
 import torch
 import numpy as np
@@ -13,6 +14,7 @@ from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
+@dataclass
 class TrainConfig:
     # Model architecture
     n_encoder_layers = 6
@@ -36,13 +38,14 @@ class TrainConfig:
     warmup_fraction = 0.3  # original paper used 4% of data for a warmup
     accumulation_steps = 10
     label_smoothing = 0.1
+    use_cross_entropy = True
 
     # Misc
     seed = 42
     tokenizer_path = "tokenizer.json"
-    clearml_project = "vanilla-transformer"
-    clearml_task = "transfromer-training"
-    model_save_path = "model.pth"
+    clearml_project: str
+    clearml_task: str
+    model_save_path: str
 
 
 def set_seed(seed: int | None = 42):
@@ -97,6 +100,7 @@ def prepare_training(config: TrainConfig):
     criterion = LabelSmoothingLoss(
         ignore_index=tokenizer.token_to_id("[PAD]"),
         smoothing=config.label_smoothing,
+        use_cross_entropy=config.use_cross_entropy,
     )
     return {
         "data": data,
@@ -208,8 +212,7 @@ def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, 
     return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
 
-def train_main(config: TrainConfig | None = None):
-    config = config or TrainConfig()
+def train_main(config: TrainConfig):
     task = Task.init(
         project_name=config.clearml_project,
         task_name=config.clearml_task,
@@ -286,4 +289,8 @@ def train_main(config: TrainConfig | None = None):
 
 
 if __name__ == "__main__":
-    train_main()
+    train_main(TrainConfig(
+        clearml_project="vanilla-transformer",
+        clearml_task="transfromer-training",
+        model_save_path="model.pth",
+    ))
