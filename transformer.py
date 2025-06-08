@@ -33,7 +33,7 @@ class ScaledDotProductAttention(nn.Module):
         p = 0.1 if use_dropout else 0.0
         self.dropout = nn.Dropout(p=p)
 
-    def forward(self, q, k, v, mask=None):
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask=None):
         """
         q - (batch_size, n_heads, seq_len_q, head_dim)
         k - (batch_size, n_heads, seq_len_kv, head_dim)
@@ -72,7 +72,7 @@ class MultiHeadAttention(nn.Module):
 
         self.sdpa = ScaledDotProductAttention(use_dropout=use_additional_dropout)
 
-    def forward(self, q, k, v, mask=None):
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None):
         """
         q - (batch_size, seq_len_q, embed_size)
         k - (batch_size, seq_len_kv, embed_size)
@@ -135,7 +135,7 @@ class EncoderLayer(nn.Module):
         self.dropout2 = nn.Dropout(p=0.1)
         self.post_ln = post_ln
 
-    def forward(self, x, mask=None):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         """
         x - (batch_size, seq_len_src, embed_size)
         mask - (batch_size, 1, seq_len_src)
@@ -166,7 +166,7 @@ class Encoder(nn.Module):
         ])
         self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
 
-    def forward(self, x, mask=None):
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         """
         x - (batch_size, seq_len_src, embed_size)
         mask - (batch_size, 1, seq_len_src)
@@ -199,7 +199,7 @@ class DecoderLayer(nn.Module):
         self.dropout3 = nn.Dropout(p=0.1)
         self.post_ln = post_ln
 
-    def forward(self, x, memory, causal_mask, encoder_mask=None):
+    def forward(self, x: torch.Tensor, memory: torch.Tensor, causal_mask: torch.Tensor, encoder_mask: torch.Tensor | None = None):
         """
         x - (batch_size, seq_len_tgt, embed_size)
         memory - (batch_size, seq_len_src, embed_size)
@@ -235,7 +235,7 @@ class Decoder(nn.Module):
         ])
         self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
 
-    def forward(self, x, memory, encoder_mask=None):
+    def forward(self, x: torch.Tensor, memory: torch.Tensor, encoder_mask: torch.Tensor | None = None):
         """
         x - (batch_size, seq_len_tgt, embed_size)
         memory - (batch_size, seq_len_src, embed_size)
@@ -311,7 +311,7 @@ class Transformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def encode(self, src, src_mask=None):
+    def encode(self, src: torch.Tensor, src_mask: torch.Tensor | None = None):
         """
         src - (batch_size, seq_len_src)
         src_mask - (batch_size, seq_len_src)
@@ -326,7 +326,7 @@ class Transformer(nn.Module):
         memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
         return memory, src_mask
 
-    def decode(self, memory, tgt, src_mask=None):
+    def decode(self, memory: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None):
         """
         memory - (batch_size, seq_len_src, embed_size)
         tgt - (batch_size, seq_len_tgt)
@@ -340,7 +340,7 @@ class Transformer(nn.Module):
         attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
         return self.fc(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
-    def forward(self, src, tgt, src_mask=None):
+    def forward(self, src: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None):
         """
         src - (batch_size, seq_len_src)
         tgt - (batch_size, seq_len_tgt)
