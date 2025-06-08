@@ -13,6 +13,22 @@ from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
+class TrainConfig:
+    TRAIN_FRACTION = 0.8
+    EPOCHS = 8
+    BASE_LR = 0.8
+    BATCH_SIZE = 128
+    # original paper used 4% of data for a warmup
+    WARMUP_FRACTION = 0.3
+    ACCUMULATION_STEPS = 10
+    LABEL_SMOOTHING = 0.1
+    SEED = 42
+    TOKENIZER_PATH = "tokenizer.json"
+    CLEARML_PROJECT = "vanilla-transformer"
+    CLEARML_TASK = "transfromer-training"
+    MODEL_SAVE_PATH = "model.pth"
+
+
 def set_seed(seed: int | None = 42):
     if seed is None:
         return
@@ -24,76 +40,54 @@ def set_seed(seed: int | None = 42):
     torch.backends.cudnn.benchmark = False
 
 
-set_seed(42)
-data = load_data("raw")
+def prepare_training(config: TrainConfig):
+    set_seed(config.SEED)
+    data = load_data("raw")
+    train_size = int(len(data) * config.TRAIN_FRACTION)
+    train_data = data[:train_size]
+    val_data = data[train_size:]
 
-TRAIN_FRACTION = 0.8
-EPOCHS = 8
-BASE_LR = 0.8
-BATCH_SIZE = 128
-# original paper used 4% of data for a warmup
-WARMUP_FRACTION = 0.3
-ACCUMULATION_STEPS = 10
-LABEL_SMOOTHING = 0.1
+    train_epoch_batches = (train_size + config.BATCH_SIZE - 1) // config.BATCH_SIZE
+    train_epoch_steps = (train_epoch_batches + config.ACCUMULATION_STEPS - 1) // config.ACCUMULATION_STEPS
+    train_steps = train_epoch_steps * config.EPOCHS
+    warmup_steps = int(train_steps * config.WARMUP_FRACTION)
 
-task = Task.init(
-    project_name="vanilla-transformer",
-    task_name="transfromer-training",
-)
-task.connect({
-    "batch_size": BATCH_SIZE,
-    "epochs": EPOCHS,
-    "warmup_fraction": WARMUP_FRACTION,
-    "train_fraction": TRAIN_FRACTION,
-    "accumulation_steps": ACCUMULATION_STEPS,
-    "base_lr": BASE_LR,
-})
+    if not os.path.isfile(config.TOKENIZER_PATH):
+        tokenizer = build_tokenizer(train_data, save_path=config.TOKENIZER_PATH)
+    else:
+        tokenizer = get_tokenizer(config.TOKENIZER_PATH)
 
-train_size = int(len(data) * TRAIN_FRACTION)
-train_data = data[:train_size]
-val_data = data[train_size:]
-
-train_epoch_batches = (train_size + BATCH_SIZE - 1) // BATCH_SIZE
-train_epoch_steps = (train_epoch_batches + ACCUMULATION_STEPS - 1) // ACCUMULATION_STEPS
-train_steps = train_epoch_steps * EPOCHS
-global_step = 0
-warmup_steps = int(train_steps * WARMUP_FRACTION)
-
-if not os.path.isfile("tokenizer.json"):
-    tokenizer = build_tokenizer(train_data, save_path="tokenizer.json")
-else:
-    tokenizer = get_tokenizer("tokenizer.json")
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = Transformer(
-    tokenizer.get_vocab_size(),
-).to(device)
-generator = Generator(
-    model,
-    tokenizer.token_to_id("[START]"),
-    tokenizer.token_to_id("[END]"),
-)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = Transformer(tokenizer.get_vocab_size()).to(device)
+    generator = Generator(
+        model,
+        tokenizer.token_to_id("[START]"),
+        tokenizer.token_to_id("[END]"),
+    )
+    criterion = LabelSmoothingLoss(
+        ignore_index=tokenizer.token_to_id("[PAD]"),
+        smoothing=config.LABEL_SMOOTHING,
+    )
+    return {
+        "data": data,
+        "train_data": train_data,
+        "val_data": val_data,
+        "train_epoch_batches": train_epoch_batches,
+        "warmup_steps": warmup_steps,
+        "tokenizer": tokenizer,
+        "device": device,
+        "model": model,
+        "generator": generator,
+        "criterion": criterion,
+    }
 
 
-criterion = LabelSmoothingLoss(
-    ignore_index=tokenizer.token_to_id("[PAD]"),
-    smoothing=LABEL_SMOOTHING,
-)
-
-
-def rate(step: int, d_model: int = 512, warmup: int = warmup_steps):
+def rate(step: int, d_model: int = 512, warmup: int = 4000):
     step = max(step, 1)
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
-opt = torch.optim.Adam(model.parameters(), lr=BASE_LR, betas=(0.9, 0.98), eps=1e-9)
-scheduler = torch.optim.lr_scheduler.LambdaLR(
-    opt,
-    lr_lambda=rate,
-)
 
-
-def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
-    global global_step
+def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, task, train_epoch_batches, accumulation_steps, global_step, epoch_index):
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
@@ -102,7 +96,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
     for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
         data_iterator,
         total=train_epoch_batches,
-        desc=f"Train epoch {e}",
+        desc=f"Train epoch {epoch_index}",
     )):
         src_tokens = src_tokens.to(device)  # (batch_size, seq_len_src)
         tgt_inputs = tgt_tokens[:, :-1].to(device)  # (batch_size, seq_len_tgt - 1)
@@ -120,7 +114,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
         backwards_since_last_step += 1
 
         if (
-            (batch_index + 1) % ACCUMULATION_STEPS == 0
+            (batch_index + 1) % accumulation_steps == 0
             or batch_index + 1 == train_epoch_batches
         ):
             # log mean of accumulated loss
@@ -135,17 +129,17 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device):
             backwards_since_last_step = 0
             global_step += 1
 
-    return sum(epoch_loss_history) / len(epoch_loss_history)
+    return sum(epoch_loss_history) / len(epoch_loss_history), global_step
+
 
 @torch.no_grad
-def validate_one_epoch(model, data_iterator, criterion, device):
+def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, tokenizer, generator, batch_size, epoch_index):
     model.eval()
-
     epoch_val_loss_history = []
     for src_tokens, tgt_tokens, src_mask in tqdm(
         data_iterator,
-        total=len(val_data) // (2 * BATCH_SIZE),
-        desc=f"Val epoch {e}",
+        total=len(val_data) // (2 * batch_size),
+        desc=f"Val epoch {epoch_index}",
     ):
         src_tokens = src_tokens.to(device)
         tgt_inputs = tgt_tokens[:, :-1].to(device)
@@ -179,26 +173,65 @@ def validate_one_epoch(model, data_iterator, criterion, device):
 
     return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
-
-for e in range(EPOCHS):
-    train_iterator = get_data_batch_iterator(
-        train_data,
-        tokenizer,
-        batch_size=BATCH_SIZE,
+def train_main(config: TrainConfig | None = None):
+    config = config or TrainConfig()
+    task = Task.init(
+        project_name=config.CLEARML_PROJECT,
+        task_name=config.CLEARML_TASK,
     )
-    epoch_train_loss_avg = train_one_epoch(model, train_iterator, criterion, opt, scheduler, device)
-    task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
+    task.connect({
+        "batch_size": config.BATCH_SIZE,
+        "epochs": config.EPOCHS,
+        "warmup_fraction": config.WARMUP_FRACTION,
+        "train_fraction": config.TRAIN_FRACTION,
+        "accumulation_steps": config.ACCUMULATION_STEPS,
+        "base_lr": config.BASE_LR,
+    })
 
-    val_iterator = get_data_batch_iterator(
-        val_data,
-        tokenizer,
-        batch_size=2 * BATCH_SIZE,
-    )
+    prep = prepare_training(config)
+    train_data = prep["train_data"]
+    val_data = prep["val_data"]
+    train_epoch_batches = prep["train_epoch_batches"]
+    warmup_steps = prep["warmup_steps"]
+    tokenizer = prep["tokenizer"]
+    device = prep["device"]
+    model = prep["model"]
+    generator = prep["generator"]
+    criterion = prep["criterion"]
 
-    epoch_val_loss_avg = validate_one_epoch(model, val_iterator, criterion, device)
-    task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
+    def lr_schedule(step):
+        return rate(step, d_model=512, warmup=warmup_steps)
 
-    torch.cuda.empty_cache()
+    opt = torch.optim.Adam(model.parameters(), lr=config.BASE_LR, betas=(0.9, 0.98), eps=1e-9)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=lr_schedule)
+
+    global_step = 0
+    for e in range(config.EPOCHS):
+        train_iterator = get_data_batch_iterator(
+            train_data,
+            tokenizer,
+            batch_size=config.BATCH_SIZE,
+        )
+        epoch_train_loss_avg, global_step = train_one_epoch(
+            model, train_iterator, criterion, opt, scheduler, device, task,
+            train_epoch_batches, config.ACCUMULATION_STEPS, global_step, e
+        )
+        task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
+
+        val_iterator = get_data_batch_iterator(
+            val_data,
+            tokenizer,
+            batch_size=2 * config.BATCH_SIZE,
+        )
+        epoch_val_loss_avg = validate_one_epoch(
+            model, val_iterator, criterion, device, task, val_data, tokenizer, generator, config.BATCH_SIZE, e
+        )
+        task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
+
+        torch.cuda.empty_cache()
+
+    torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
 
 
-torch.save(model.state_dict(), "model.pth")
+if __name__ == "__main__":
+    train_main()
