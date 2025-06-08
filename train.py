@@ -52,7 +52,9 @@ def prepare_training(config: TrainConfig, transformer_config: "TransformerConfig
     val_data = data[train_size:]
 
     train_epoch_batches = (train_size + config.batch_size - 1) // config.batch_size
-    train_epoch_steps = (train_epoch_batches + config.accumulation_steps - 1) // config.accumulation_steps
+    train_epoch_steps = (
+        train_epoch_batches + config.accumulation_steps - 1
+    ) // config.accumulation_steps
     train_steps = train_epoch_steps * config.epochs
     warmup_steps = int(train_steps * config.warmup_fraction)
 
@@ -92,7 +94,19 @@ def rate(step: int, d_model: int = 512, warmup: int = 4000):
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
 
-def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, train_epoch_batches, accumulation_steps, global_step, epoch_index, n_epochs):
+def train_one_epoch(
+    model,
+    data_iterator,
+    criterion,
+    opt,
+    scheduler,
+    device,
+    train_epoch_batches,
+    accumulation_steps,
+    global_step,
+    epoch_index,
+    n_epochs,
+):
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
@@ -101,7 +115,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
     step_losses = []
 
     batch_digits = len(str(train_epoch_batches))
-    print(f"Epoch: [{epoch_index+1}/{n_epochs}]")
+    print(f"Epoch: [{epoch_index + 1}/{n_epochs}]")
     for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator):
         src_tokens = src_tokens.to(device)
         tgt_inputs = tgt_tokens[:, :-1].to(device)
@@ -127,16 +141,15 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
             current_lr = scheduler.get_last_lr()[0]
             current_loss = accumulated_loss / backwards_since_last_step
             print(
-                f"Step: [{str(batch_index+1).rjust(batch_digits)}/{train_epoch_batches}]",
+                f"Step: [{str(batch_index + 1).rjust(batch_digits)}/{train_epoch_batches}]",
                 f"Step loss: {current_loss:.4f}",
                 f"LR: {current_lr:.6f}",
-                sep=' | '
+                sep=" | ",
             )
 
         if (
-            (batch_index + 1) % accumulation_steps == 0
-            or batch_index + 1 == train_epoch_batches
-        ):
+            batch_index + 1
+        ) % accumulation_steps == 0 or batch_index + 1 == train_epoch_batches:
             mean_loss = accumulated_loss / backwards_since_last_step
             opt.step()
             opt.zero_grad()
@@ -147,7 +160,12 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
             backwards_since_last_step = 0
             global_step += 1
 
-    return sum(epoch_loss_history) / len(epoch_loss_history), global_step, step_indices, step_losses
+    return (
+        sum(epoch_loss_history) / len(epoch_loss_history),
+        global_step,
+        step_indices,
+        step_losses,
+    )
 
 
 @torch.no_grad
@@ -184,13 +202,17 @@ def cherry_pick_generation(val_data, tokenizer, generator, n_picks, device):
             f"Source:    {decode(tokenizer, src_tokens)}",
             f"Target:    {decode(tokenizer, tgt_tokens)}",
             f"Generated: {decode(tokenizer, generated)}\n",
-            sep='\n'
+            sep="\n",
         )
 
 
-def train_main(config: TrainConfig, transformer_config: "TransformerConfig", save_path: str):
+def train_main(
+    config: TrainConfig, transformer_config: "TransformerConfig", save_path: str
+):
     if os.path.isdir(save_path):
-        raise RuntimeError(f"Directory {save_path} already exists, can't train model and save it there.")
+        raise RuntimeError(
+            f"Directory {save_path} already exists, can't train model and save it there."
+        )
     os.mkdir(save_path)
     prep = prepare_training(config, transformer_config)
     train_data = prep["train_data"]
@@ -206,7 +228,9 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
     def lr_schedule(step):
         return rate(step, d_model=512, warmup=warmup_steps)
 
-    opt = torch.optim.Adam(model.parameters(), lr=config.base_lr, betas=(0.9, 0.98), eps=1e-9)
+    opt = torch.optim.Adam(
+        model.parameters(), lr=config.base_lr, betas=(0.9, 0.98), eps=1e-9
+    )
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=lr_schedule)
 
     global_step = 0
@@ -223,25 +247,35 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
             batch_size=config.batch_size,
         )
         epoch_train_loss_avg, global_step, step_x, step_losses = train_one_epoch(
-            model, train_iterator, criterion, opt, scheduler, device,
-            train_epoch_batches, config.accumulation_steps, global_step, e, config.epochs
+            model,
+            train_iterator,
+            criterion,
+            opt,
+            scheduler,
+            device,
+            train_epoch_batches,
+            config.accumulation_steps,
+            global_step,
+            e,
+            config.epochs,
         )
         epoch_indices.append(e)
         epoch_train_losses.append(epoch_train_loss_avg)
         step_indices.extend(step_x)
         step_train_losses.extend(step_losses)
 
-        cherry_pick_generation(
-            val_data, tokenizer, generator, 4, device
-        )
-        print(f"\nTrain loss: {epoch_train_loss_avg:.4f}", end=' | ', flush=True)
+        cherry_pick_generation(val_data, tokenizer, generator, 4, device)
+        print(f"\nTrain loss: {epoch_train_loss_avg:.4f}", end=" | ", flush=True)
         val_iterator = get_data_batch_iterator(
             val_data,
             tokenizer,
             batch_size=2 * config.batch_size,
         )
         epoch_val_loss_avg = validate_one_epoch(
-            model, val_iterator, criterion, device,
+            model,
+            val_iterator,
+            criterion,
+            device,
         )
         epoch_val_losses.append(epoch_val_loss_avg)
         print(f"Valid loss: {epoch_val_loss_avg:.4f}\n")
@@ -276,7 +310,7 @@ def create_train_config_from_args(args) -> TrainConfig:
 
 def create_transformer_config_from_args(args) -> "TransformerConfig":
     from transformer import TransformerConfig
-    
+
     return TransformerConfig(
         vocab_size=args.vocab_size,
         n_encoder_layers=args.n_encoder_layers,
@@ -295,76 +329,169 @@ def create_transformer_config_from_args(args) -> "TransformerConfig":
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train a Transformer model')
-    
-    train_group = parser.add_argument_group('Training Configuration')
-    train_group.add_argument('--tokenizer_path', type=str, default='tokenizer.json',
-                           help='Path to tokenizer file (default: tokenizer.json)')
-    train_group.add_argument('--batch_size', type=int, default=128,
-                           help='Batch size for training (default: 128)')
-    train_group.add_argument('--epochs', type=int, default=8,
-                           help='Number of training epochs (default: 8)')
-    train_group.add_argument('--base_lr', type=float, default=0.8,
-                           help='Base learning rate (default: 0.8)')
-    train_group.add_argument('--train_fraction', type=float, default=0.8,
-                           help='Fraction of data to use for training (default: 0.8)')
-    train_group.add_argument('--warmup_fraction', type=float, default=0.3,
-                           help='Fraction of training steps for warmup (default: 0.3)')
-    train_group.add_argument('--accumulation_steps', type=int, default=10,
-                           help='Gradient accumulation steps (default: 10)')
-    train_group.add_argument('--label_smoothing', type=float, default=0.1,
-                           help='Label smoothing factor (default: 0.1)')
-    train_group.add_argument('--use_cross_entropy', action='store_true', default=True,
-                           help='Use cross entropy loss (default: True)')
-    train_group.add_argument('--use_kl_divergence', dest='use_cross_entropy', action='store_false',
-                           help='Use KL divergence loss instead of cross entropy')
-    train_group.add_argument('--seed', type=int, default=42,
-                           help='Random seed (default: 42)')
-    
-    model_group = parser.add_argument_group('Transformer Model Configuration')
-    model_group.add_argument('--vocab_size', type=int, default=8192,
-                           help='Vocabulary size (default: 8192)')
-    model_group.add_argument('--n_encoder_layers', type=int, default=6,
-                           help='Number of encoder layers (default: 6)')
-    model_group.add_argument('--n_decoder_layers', type=int, default=6,
-                           help='Number of decoder layers (default: 6)')
-    model_group.add_argument('--n_encoder_heads', type=int, default=8,
-                           help='Number of encoder attention heads (default: 8)')
-    model_group.add_argument('--n_decoder_heads', type=int, default=8,
-                           help='Number of decoder attention heads (default: 8)')
-    model_group.add_argument('--embed_size', type=int, default=512,
-                           help='Embedding dimension (default: 512)')
-    model_group.add_argument('--d_ff', type=int, default=2048,
-                           help='Feed-forward network dimension (default: 2048)')
-    model_group.add_argument('--max_len', type=int, default=4096,
-                           help='Maximum sequence length (default: 4096)')
-    model_group.add_argument('--tie_embeddings', action='store_true', default=True,
-                           help='Tie input and output embeddings (default: True)')
-    model_group.add_argument('--no_tie_embeddings', dest='tie_embeddings', action='store_false',
-                           help='Do not tie input and output embeddings')
-    model_group.add_argument('--post_ln', action='store_true', default=True,
-                           help='Use post-layer normalization (default: True)')
-    model_group.add_argument('--pre_ln', dest='post_ln', action='store_false',
-                           help='Use pre-layer normalization instead of post-layer normalization')
-    model_group.add_argument('--add_two_layer_norms', action='store_true', default=False,
-                           help='Add additional layer normalization layers (default: False)')
-    model_group.add_argument('--use_additional_dropout', action='store_true', default=False,
-                           help='Use additional dropout layers (default: False)')
-    model_group.add_argument('--xavier_initialization', action='store_true', default=False,
-                           help='Use Xavier initialization (default: False)')
+    parser = argparse.ArgumentParser(description="Train a Transformer model")
 
-    parser.add_argument('--save_path', type=str, default='model',
-                       help='Path to save the trained model (default: model)')
-    
+    train_group = parser.add_argument_group("Training Configuration")
+    train_group.add_argument(
+        "--tokenizer_path",
+        type=str,
+        default="tokenizer.json",
+        help="Path to tokenizer file (default: tokenizer.json)",
+    )
+    train_group.add_argument(
+        "--batch_size",
+        type=int,
+        default=128,
+        help="Batch size for training (default: 128)",
+    )
+    train_group.add_argument(
+        "--epochs", type=int, default=8, help="Number of training epochs (default: 8)"
+    )
+    train_group.add_argument(
+        "--base_lr", type=float, default=0.8, help="Base learning rate (default: 0.8)"
+    )
+    train_group.add_argument(
+        "--train_fraction",
+        type=float,
+        default=0.8,
+        help="Fraction of data to use for training (default: 0.8)",
+    )
+    train_group.add_argument(
+        "--warmup_fraction",
+        type=float,
+        default=0.3,
+        help="Fraction of training steps for warmup (default: 0.3)",
+    )
+    train_group.add_argument(
+        "--accumulation_steps",
+        type=int,
+        default=10,
+        help="Gradient accumulation steps (default: 10)",
+    )
+    train_group.add_argument(
+        "--label_smoothing",
+        type=float,
+        default=0.1,
+        help="Label smoothing factor (default: 0.1)",
+    )
+    train_group.add_argument(
+        "--use_cross_entropy",
+        action="store_true",
+        default=True,
+        help="Use cross entropy loss (default: True)",
+    )
+    train_group.add_argument(
+        "--use_kl_divergence",
+        dest="use_cross_entropy",
+        action="store_false",
+        help="Use KL divergence loss instead of cross entropy",
+    )
+    train_group.add_argument(
+        "--seed", type=int, default=42, help="Random seed (default: 42)"
+    )
+
+    model_group = parser.add_argument_group("Transformer Model Configuration")
+    model_group.add_argument(
+        "--vocab_size", type=int, default=8192, help="Vocabulary size (default: 8192)"
+    )
+    model_group.add_argument(
+        "--n_encoder_layers",
+        type=int,
+        default=6,
+        help="Number of encoder layers (default: 6)",
+    )
+    model_group.add_argument(
+        "--n_decoder_layers",
+        type=int,
+        default=6,
+        help="Number of decoder layers (default: 6)",
+    )
+    model_group.add_argument(
+        "--n_encoder_heads",
+        type=int,
+        default=8,
+        help="Number of encoder attention heads (default: 8)",
+    )
+    model_group.add_argument(
+        "--n_decoder_heads",
+        type=int,
+        default=8,
+        help="Number of decoder attention heads (default: 8)",
+    )
+    model_group.add_argument(
+        "--embed_size", type=int, default=512, help="Embedding dimension (default: 512)"
+    )
+    model_group.add_argument(
+        "--d_ff",
+        type=int,
+        default=2048,
+        help="Feed-forward network dimension (default: 2048)",
+    )
+    model_group.add_argument(
+        "--max_len",
+        type=int,
+        default=4096,
+        help="Maximum sequence length (default: 4096)",
+    )
+    model_group.add_argument(
+        "--tie_embeddings",
+        action="store_true",
+        default=True,
+        help="Tie input and output embeddings (default: True)",
+    )
+    model_group.add_argument(
+        "--no_tie_embeddings",
+        dest="tie_embeddings",
+        action="store_false",
+        help="Do not tie input and output embeddings",
+    )
+    model_group.add_argument(
+        "--post_ln",
+        action="store_true",
+        default=True,
+        help="Use post-layer normalization (default: True)",
+    )
+    model_group.add_argument(
+        "--pre_ln",
+        dest="post_ln",
+        action="store_false",
+        help="Use pre-layer normalization instead of post-layer normalization",
+    )
+    model_group.add_argument(
+        "--add_two_layer_norms",
+        action="store_true",
+        default=False,
+        help="Add additional layer normalization layers (default: False)",
+    )
+    model_group.add_argument(
+        "--use_additional_dropout",
+        action="store_true",
+        default=False,
+        help="Use additional dropout layers (default: False)",
+    )
+    model_group.add_argument(
+        "--xavier_initialization",
+        action="store_true",
+        default=False,
+        help="Use Xavier initialization (default: False)",
+    )
+
+    parser.add_argument(
+        "--save_path",
+        type=str,
+        default="model",
+        help="Path to save the trained model (default: model)",
+    )
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    
+
     train_config = create_train_config_from_args(args)
     transformer_config = create_transformer_config_from_args(args)
-    
+
     train_main(
         train_config,
         transformer_config,

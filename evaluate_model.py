@@ -39,7 +39,9 @@ def evaluate_model(model_path, tokenizer_path, bleu_samples=1000, verbose: bool 
         output_tokens = generator.generate(torch.tensor(input_tokens).to(device))
         decoded = decode(tokenizer, output_tokens)
         try:
-            bleu_value = bleu.compute(references=[tgt_language], predictions=[decoded], smooth=True)['bleu']
+            bleu_value = bleu.compute(
+                references=[tgt_language], predictions=[decoded], smooth=True
+            )["bleu"]
         except ZeroDivisionError:
             bleu_value = 0.0
         bleu_values.append(bleu_value)
@@ -50,16 +52,30 @@ def evaluate_model(model_path, tokenizer_path, bleu_samples=1000, verbose: bool 
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Evaluate a trained Transformer model using BLEU score')
-    
-    parser.add_argument('model_path', type=str,
-                       help='Path to the saved model file (.pth) or model directory')
-    parser.add_argument('tokenizer_path', type=str,
-                       help='Path to the tokenizer file (.json)')
-    parser.add_argument('--bleu_samples', type=int, default=1000,
-                       help='Number of samples to use for BLEU evaluation (default: 1000)')
-    parser.add_argument('--verbose', action='store_true', default=True,
-                       help='Verbose progress of evaluation (default: True)')
+    parser = argparse.ArgumentParser(
+        description="Evaluate a trained Transformer model using BLEU score"
+    )
+
+    parser.add_argument(
+        "model_path",
+        type=str,
+        help="Path to the saved model file (.pth) or model directory",
+    )
+    parser.add_argument(
+        "tokenizer_path", type=str, help="Path to the tokenizer file (.json)"
+    )
+    parser.add_argument(
+        "--bleu_samples",
+        type=int,
+        default=1000,
+        help="Number of samples to use for BLEU evaluation (default: 1000)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=True,
+        help="Verbose progress of evaluation (default: True)",
+    )
 
     args = parser.parse_args()
 

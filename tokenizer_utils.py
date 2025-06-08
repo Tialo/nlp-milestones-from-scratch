@@ -43,7 +43,9 @@ def decode(tokenizer: Tokenizer, sequence: list[int] | torch.Tensor) -> str:
     if isinstance(sequence, torch.Tensor):
         if sequence.ndim == 2:
             if sequence.shape[0] != 1:
-                raise ValueError("Can't handle 2D tensor in decode with 1st dimension > 1")
+                raise ValueError(
+                    "Can't handle 2D tensor in decode with 1st dimension > 1"
+                )
             sequence = sequence[0]
         sequence = sequence.tolist()
     return tokenizer.decode(sequence, skip_special_tokens=True)

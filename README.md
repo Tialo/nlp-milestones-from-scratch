@@ -9,7 +9,7 @@ So I built this version from scratch. It follows the paper closely by default, b
 * Clone the project and install requirements:
 ```bash
 git clone git@github.com:Tialo/pure-vanilla-transformer-from-scratch.git
-cd vanilla-transformer
+cd pure-vanilla-transformer-from-scratch
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
