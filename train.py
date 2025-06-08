@@ -14,14 +14,30 @@ from data_utils import get_data_batch_iterator, load_data
 
 
 class TrainConfig:
-    train_fraction = 0.8
+    # Model architecture
+    n_encoder_layers = 6
+    n_decoder_layers = 6
+    n_encoder_heads = 8
+    n_decoder_heads = 8
+    embed_size = 512
+    d_ff = 2048
+    max_len = 4096
+    tie_embeddings = True
+    post_ln = True
+    add_two_layer_norms = False
+    use_additional_dropout = False
+    xavier_initialization = False
+
+    # Training process
+    batch_size = 128
     epochs = 8
     base_lr = 0.8
-    batch_size = 128
-    # original paper used 4% of data for a warmup
-    warmup_fraction = 0.3
+    train_fraction = 0.8
+    warmup_fraction = 0.3  # original paper used 4% of data for a warmup
     accumulation_steps = 10
     label_smoothing = 0.1
+
+    # Misc
     seed = 42
     tokenizer_path = "tokenizer.json"
     clearml_project = "vanilla-transformer"
@@ -58,7 +74,21 @@ def prepare_training(config: TrainConfig):
         tokenizer = get_tokenizer(config.tokenizer_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Transformer(tokenizer.get_vocab_size()).to(device)
+    model = Transformer(
+        vocab_size=tokenizer.get_vocab_size(),
+        n_encoder_layers=config.n_encoder_layers,
+        n_decoder_layers=config.n_decoder_layers,
+        n_encoder_heads=config.n_encoder_heads,
+        n_decoder_heads=config.n_decoder_heads,
+        embed_size=config.embed_size,
+        d_ff=config.d_ff,
+        max_len=config.max_len,
+        tie_embeddings=config.tie_embeddings,
+        post_ln=config.post_ln,
+        add_two_layer_norms=config.add_two_layer_norms,
+        use_additional_dropout=config.use_additional_dropout,
+        xavier_initialization=config.xavier_initialization,
+    ).to(device)
     generator = Generator(
         model,
         tokenizer.token_to_id("[START]"),
