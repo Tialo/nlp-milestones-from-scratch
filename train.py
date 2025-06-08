@@ -1,6 +1,7 @@
 import os
 import random
 import json
+import argparse
 from typing import TYPE_CHECKING
 from dataclasses import dataclass, asdict
 
@@ -188,6 +189,8 @@ def cherry_pick_generation(val_data, tokenizer, generator, n_picks, device):
 
 
 def train_main(config: TrainConfig, transformer_config: "TransformerConfig", save_path: str):
+    if os.path.isdir(save_path):
+        raise RuntimeError(f"Directory {save_path} already exists, can't train model and save it there.")
     os.mkdir(save_path)
     prep = prepare_training(config, transformer_config)
     train_data = prep["train_data"]
@@ -227,8 +230,11 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
         epoch_train_losses.append(epoch_train_loss_avg)
         step_indices.extend(step_x)
         step_train_losses.extend(step_losses)
-        print(f"Train loss: {epoch_train_loss_avg:.4f}", end=' | ')
 
+        cherry_pick_generation(
+            val_data, tokenizer, generator, 4, device
+        )
+        print(f"\nTrain loss: {epoch_train_loss_avg:.4f}", end=' | ', flush=True)
         val_iterator = get_data_batch_iterator(
             val_data,
             tokenizer,
@@ -238,15 +244,13 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
             model, val_iterator, criterion, device,
         )
         epoch_val_losses.append(epoch_val_loss_avg)
-        print(f"Valid loss: {epoch_val_loss_avg:.4f}")
-        cherry_pick_generation(
-            val_data, tokenizer, generator, 4, device
-        )
+        print(f"Valid loss: {epoch_val_loss_avg:.4f}\n")
         print()
 
         torch.cuda.empty_cache()
 
     model.save_pretrained(save_path)
+    print(f"Model successfully saved at {save_path}!")
 
     return {
         "epoch_train_loss": (epoch_indices, epoch_train_losses),
@@ -255,11 +259,114 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
     }
 
 
-if __name__ == "__main__":
-    from transformer import TransformerConfig
+def create_train_config_from_args(args) -> TrainConfig:
+    return TrainConfig(
+        tokenizer_path=args.tokenizer_path,
+        batch_size=args.batch_size,
+        epochs=args.epochs,
+        base_lr=args.base_lr,
+        train_fraction=args.train_fraction,
+        warmup_fraction=args.warmup_fraction,
+        accumulation_steps=args.accumulation_steps,
+        label_smoothing=args.label_smoothing,
+        use_cross_entropy=args.use_cross_entropy,
+        seed=args.seed,
+    )
 
+
+def create_transformer_config_from_args(args) -> "TransformerConfig":
+    from transformer import TransformerConfig
+    
+    return TransformerConfig(
+        vocab_size=args.vocab_size,
+        n_encoder_layers=args.n_encoder_layers,
+        n_decoder_layers=args.n_decoder_layers,
+        n_encoder_heads=args.n_encoder_heads,
+        n_decoder_heads=args.n_decoder_heads,
+        embed_size=args.embed_size,
+        d_ff=args.d_ff,
+        max_len=args.max_len,
+        tie_embeddings=args.tie_embeddings,
+        post_ln=args.post_ln,
+        add_two_layer_norms=args.add_two_layer_norms,
+        use_additional_dropout=args.use_additional_dropout,
+        xavier_initialization=args.xavier_initialization,
+    )
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train a Transformer model')
+    
+    train_group = parser.add_argument_group('Training Configuration')
+    train_group.add_argument('--tokenizer_path', type=str, default='tokenizer.json',
+                           help='Path to tokenizer file (default: tokenizer.json)')
+    train_group.add_argument('--batch_size', type=int, default=128,
+                           help='Batch size for training (default: 128)')
+    train_group.add_argument('--epochs', type=int, default=8,
+                           help='Number of training epochs (default: 8)')
+    train_group.add_argument('--base_lr', type=float, default=0.8,
+                           help='Base learning rate (default: 0.8)')
+    train_group.add_argument('--train_fraction', type=float, default=0.8,
+                           help='Fraction of data to use for training (default: 0.8)')
+    train_group.add_argument('--warmup_fraction', type=float, default=0.3,
+                           help='Fraction of training steps for warmup (default: 0.3)')
+    train_group.add_argument('--accumulation_steps', type=int, default=10,
+                           help='Gradient accumulation steps (default: 10)')
+    train_group.add_argument('--label_smoothing', type=float, default=0.1,
+                           help='Label smoothing factor (default: 0.1)')
+    train_group.add_argument('--use_cross_entropy', action='store_true', default=True,
+                           help='Use cross entropy loss (default: True)')
+    train_group.add_argument('--no_cross_entropy', dest='use_cross_entropy', action='store_false',
+                           help='Use KL divergence loss instead of cross entropy')
+    train_group.add_argument('--seed', type=int, default=42,
+                           help='Random seed (default: 42)')
+    
+    model_group = parser.add_argument_group('Transformer Model Configuration')
+    model_group.add_argument('--vocab_size', type=int, default=8192,
+                           help='Vocabulary size (default: 8192)')
+    model_group.add_argument('--n_encoder_layers', type=int, default=6,
+                           help='Number of encoder layers (default: 6)')
+    model_group.add_argument('--n_decoder_layers', type=int, default=6,
+                           help='Number of decoder layers (default: 6)')
+    model_group.add_argument('--n_encoder_heads', type=int, default=8,
+                           help='Number of encoder attention heads (default: 8)')
+    model_group.add_argument('--n_decoder_heads', type=int, default=8,
+                           help='Number of decoder attention heads (default: 8)')
+    model_group.add_argument('--embed_size', type=int, default=512,
+                           help='Embedding dimension (default: 512)')
+    model_group.add_argument('--d_ff', type=int, default=2048,
+                           help='Feed-forward network dimension (default: 2048)')
+    model_group.add_argument('--max_len', type=int, default=4096,
+                           help='Maximum sequence length (default: 4096)')
+    model_group.add_argument('--tie_embeddings', action='store_true', default=True,
+                           help='Tie input and output embeddings (default: True)')
+    model_group.add_argument('--no_tie_embeddings', dest='tie_embeddings', action='store_false',
+                           help='Do not tie input and output embeddings')
+    model_group.add_argument('--post_ln', action='store_true', default=True,
+                           help='Use post-layer normalization (default: True)')
+    model_group.add_argument('--pre_ln', dest='post_ln', action='store_false',
+                           help='Use pre-layer normalization instead of post-layer normalization')
+    model_group.add_argument('--add_two_layer_norms', action='store_true', default=False,
+                           help='Add additional layer normalization layers (default: False)')
+    model_group.add_argument('--use_additional_dropout', action='store_true', default=False,
+                           help='Use additional dropout layers (default: False)')
+    model_group.add_argument('--xavier_initialization', action='store_true', default=False,
+                           help='Use Xavier initialization (default: False)')
+
+    parser.add_argument('--save_path', type=str, default='model',
+                       help='Path to save the trained model (default: model)')
+    
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    
+    train_config = create_train_config_from_args(args)
+    transformer_config = create_transformer_config_from_args(args)
+    
     train_main(
-        TrainConfig(),
-        TransformerConfig(),
-        "model",
+        train_config,
+        transformer_config,
+        args.save_path,
     )
