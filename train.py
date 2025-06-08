@@ -14,19 +14,19 @@ from data_utils import get_data_batch_iterator, load_data
 
 
 class TrainConfig:
-    TRAIN_FRACTION = 0.8
-    EPOCHS = 8
-    BASE_LR = 0.8
-    BATCH_SIZE = 128
+    train_fraction = 0.8
+    epochs = 8
+    base_lr = 0.8
+    batch_size = 128
     # original paper used 4% of data for a warmup
-    WARMUP_FRACTION = 0.3
-    ACCUMULATION_STEPS = 10
-    LABEL_SMOOTHING = 0.1
-    SEED = 42
-    TOKENIZER_PATH = "tokenizer.json"
-    CLEARML_PROJECT = "vanilla-transformer"
-    CLEARML_TASK = "transfromer-training"
-    MODEL_SAVE_PATH = "model.pth"
+    warmup_fraction = 0.3
+    accumulation_steps = 10
+    label_smoothing = 0.1
+    seed = 42
+    tokenizer_path = "tokenizer.json"
+    clearml_project = "vanilla-transformer"
+    clearml_task = "transfromer-training"
+    model_save_path = "model.pth"
 
 
 def set_seed(seed: int | None = 42):
@@ -41,21 +41,21 @@ def set_seed(seed: int | None = 42):
 
 
 def prepare_training(config: TrainConfig):
-    set_seed(config.SEED)
+    set_seed(config.seed)
     data = load_data("raw")
-    train_size = int(len(data) * config.TRAIN_FRACTION)
+    train_size = int(len(data) * config.train_fraction)
     train_data = data[:train_size]
     val_data = data[train_size:]
 
-    train_epoch_batches = (train_size + config.BATCH_SIZE - 1) // config.BATCH_SIZE
-    train_epoch_steps = (train_epoch_batches + config.ACCUMULATION_STEPS - 1) // config.ACCUMULATION_STEPS
-    train_steps = train_epoch_steps * config.EPOCHS
-    warmup_steps = int(train_steps * config.WARMUP_FRACTION)
+    train_epoch_batches = (train_size + config.batch_size - 1) // config.batch_size
+    train_epoch_steps = (train_epoch_batches + config.accumulation_steps - 1) // config.accumulation_steps
+    train_steps = train_epoch_steps * config.epochs
+    warmup_steps = int(train_steps * config.warmup_fraction)
 
-    if not os.path.isfile(config.TOKENIZER_PATH):
-        tokenizer = build_tokenizer(train_data, save_path=config.TOKENIZER_PATH)
+    if not os.path.isfile(config.tokenizer_path):
+        tokenizer = build_tokenizer(train_data, save_path=config.tokenizer_path)
     else:
-        tokenizer = get_tokenizer(config.TOKENIZER_PATH)
+        tokenizer = get_tokenizer(config.tokenizer_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Transformer(tokenizer.get_vocab_size()).to(device)
@@ -66,7 +66,7 @@ def prepare_training(config: TrainConfig):
     )
     criterion = LabelSmoothingLoss(
         ignore_index=tokenizer.token_to_id("[PAD]"),
-        smoothing=config.LABEL_SMOOTHING,
+        smoothing=config.label_smoothing,
     )
     return {
         "data": data,
@@ -176,16 +176,16 @@ def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, 
 def train_main(config: TrainConfig | None = None):
     config = config or TrainConfig()
     task = Task.init(
-        project_name=config.CLEARML_PROJECT,
-        task_name=config.CLEARML_TASK,
+        project_name=config.clearml_project,
+        task_name=config.clearml_task,
     )
     task.connect({
-        "batch_size": config.BATCH_SIZE,
-        "epochs": config.EPOCHS,
-        "warmup_fraction": config.WARMUP_FRACTION,
-        "train_fraction": config.TRAIN_FRACTION,
-        "accumulation_steps": config.ACCUMULATION_STEPS,
-        "base_lr": config.BASE_LR,
+        "batch_size": config.batch_size,
+        "epochs": config.epochs,
+        "warmup_fraction": config.warmup_fraction,
+        "train_fraction": config.train_fraction,
+        "accumulation_steps": config.accumulation_steps,
+        "base_lr": config.base_lr,
     })
 
     prep = prepare_training(config)
@@ -202,35 +202,35 @@ def train_main(config: TrainConfig | None = None):
     def lr_schedule(step):
         return rate(step, d_model=512, warmup=warmup_steps)
 
-    opt = torch.optim.Adam(model.parameters(), lr=config.BASE_LR, betas=(0.9, 0.98), eps=1e-9)
+    opt = torch.optim.Adam(model.parameters(), lr=config.base_lr, betas=(0.9, 0.98), eps=1e-9)
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=lr_schedule)
 
     global_step = 0
-    for e in range(config.EPOCHS):
+    for e in range(config.epochs):
         train_iterator = get_data_batch_iterator(
             train_data,
             tokenizer,
-            batch_size=config.BATCH_SIZE,
+            batch_size=config.batch_size,
         )
         epoch_train_loss_avg, global_step = train_one_epoch(
             model, train_iterator, criterion, opt, scheduler, device, task,
-            train_epoch_batches, config.ACCUMULATION_STEPS, global_step, e
+            train_epoch_batches, config.accumulation_steps, global_step, e
         )
         task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
 
         val_iterator = get_data_batch_iterator(
             val_data,
             tokenizer,
-            batch_size=2 * config.BATCH_SIZE,
+            batch_size=2 * config.batch_size,
         )
         epoch_val_loss_avg = validate_one_epoch(
-            model, val_iterator, criterion, device, task, val_data, tokenizer, generator, config.BATCH_SIZE, e
+            model, val_iterator, criterion, device, task, val_data, tokenizer, generator, config.batch_size, e
         )
         task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
 
         torch.cuda.empty_cache()
 
-    torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
+    torch.save(model.state_dict(), config.model_save_path)
 
 
 if __name__ == "__main__":
