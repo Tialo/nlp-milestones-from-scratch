@@ -1,7 +1,27 @@
+import os
+import json
 import math
+from dataclasses import dataclass, asdict
 
 import torch
 import torch.nn as nn
+
+
+@dataclass
+class TransformerConfig:
+    vocab_size: int = 8192
+    n_encoder_layers: int = 6
+    n_decoder_layers: int = 6
+    n_encoder_heads: int = 8
+    n_decoder_heads: int = 8
+    embed_size: int = 512
+    d_ff: int = 2048
+    max_len: int = 4096
+    tie_embeddings: bool = True
+    post_ln: bool = True
+    add_two_layer_norms: bool = False
+    use_additional_dropout: bool = False
+    xavier_initialization: bool = False
 
 
 def create_causal_mask(seq_len: int):
@@ -254,64 +274,53 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self,
-        vocab_size: int,
-        n_encoder_layers: int = 6,
-        n_decoder_layers: int = 6,
-        n_encoder_heads: int = 8,
-        n_decoder_heads: int = 8,
-        embed_size: int = 512,
-        d_ff: int = 2048,
-        max_len: int = 4096,
-        tie_embeddings: bool = True,
-        post_ln: bool = True,
-        add_two_layer_norms: bool = False,
-        use_additional_dropout: bool = False,
-        xavier_initialization: bool = False,
+        config: TransformerConfig,
     ):
         super().__init__()
+        self.config = config
         # compute positional encoding for max_len once to save time for each forward pass
-        self.pos_enc = positional_encoding(max_len, embed_size)
+        self.pos_enc = positional_encoding(config.max_len, config.embed_size)
         self.encoder = Encoder(
-            n_encoder_layers,
-            n_encoder_heads,
-            embed_size,
-            d_ff,
-            post_ln=post_ln,
-            final_ln=add_two_layer_norms,
-            use_additional_dropout=use_additional_dropout,
+            config.n_encoder_layers,
+            config.n_encoder_heads,
+            config.embed_size,
+            config.d_ff,
+            post_ln=config.post_ln,
+            final_ln=config.add_two_layer_norms,
+            use_additional_dropout=config.use_additional_dropout,
         )
         self.decoder = Decoder(
-            n_decoder_layers,
-            n_decoder_heads,
-            embed_size,
-            d_ff,
-            post_ln=post_ln,
-            final_ln=add_two_layer_norms,
-            use_additional_dropout=use_additional_dropout,
+            config.n_decoder_layers,
+            config.n_decoder_heads,
+            config.embed_size,
+            config.d_ff,
+            post_ln=config.post_ln,
+            final_ln=config.add_two_layer_norms,
+            use_additional_dropout=config.use_additional_dropout,
         )
 
-        self.sqrt_dmodel = embed_size ** 0.5
+        self.sqrt_dmodel = config.embed_size ** 0.5
         # original paper used shared embedding layer for source and target
-        self.embeddings = nn.Embedding(vocab_size, embed_size)
-        self.fc = nn.Linear(embed_size, vocab_size)
+        self.embeddings = nn.Embedding(config.vocab_size, config.embed_size)
+        self.fc = nn.Linear(config.embed_size, config.vocab_size)
 
         # 3.4 In our model, we share the same weight matrix between the two
         # embedding layers and the pre-softmax linear transformation
         # see also https://paperswithcode.com/method/weight-tying
-        if tie_embeddings:
+        if config.tie_embeddings:
             self.embeddings.weight = self.fc.weight
 
         # 5.4 we apply dropout to the sums of the embeddings and the positional encodings
         self.dropout = nn.Dropout(p=0.1)
-        if xavier_initialization:
+        if config.xavier_initialization:
             self._init_params()
 
-    def _init_params(self):
+    def _init_params(self) -> None:
         for _, p in self.named_parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def encode(self, src: torch.Tensor, src_mask: torch.Tensor | None = None):
+    def encode(self, src: torch.Tensor, src_mask: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         src - (batch_size, seq_len_src)
         src_mask - (batch_size, seq_len_src)
@@ -326,7 +335,7 @@ class Transformer(nn.Module):
         memory = self.encoder(src_embed, mask=src_mask)  # (batch_size, seq_len_src, embed_size)
         return memory, src_mask
 
-    def decode(self, memory: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None):
+    def decode(self, memory: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         memory - (batch_size, seq_len_src, embed_size)
         tgt - (batch_size, seq_len_tgt)
@@ -340,7 +349,7 @@ class Transformer(nn.Module):
         attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  # (batch_size, seq_len_tgt, embed_size)
         return self.fc(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
-    def forward(self, src: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None):
+    def forward(self, src: torch.Tensor, tgt: torch.Tensor, src_mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         src - (batch_size, seq_len_src)
         tgt - (batch_size, seq_len_tgt)
@@ -348,3 +357,8 @@ class Transformer(nn.Module):
         """
         memory, src_mask = self.encode(src, src_mask)
         return self.decode(memory, tgt, src_mask)  # (batch_size, seq_len_tgt, vocab_size)
+
+    def save_pretrained(self, save_path: str) -> None:
+        torch.save(self.state_dict(), os.path.join(save_path, "model.pt"))
+        with open(os.path.join(save_path, "config.json"), "w") as f:
+            json.dump(asdict(self.config), f, indent=2)

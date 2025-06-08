@@ -1,6 +1,8 @@
 import os
 import random
-from dataclasses import dataclass
+import json
+from typing import TYPE_CHECKING
+from dataclasses import dataclass, asdict
 
 import torch
 import numpy as np
@@ -12,28 +14,13 @@ from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
+if TYPE_CHECKING:
+    from transformer import TransformerConfig
+
+
 @dataclass
 class TrainConfig:
-    # Misc
-    model_save_path: str
-    seed: int = 42
     tokenizer_path: str = "tokenizer.json"
-
-    # Model architecture
-    n_encoder_layers: int = 6
-    n_decoder_layers: int = 6
-    n_encoder_heads: int = 8
-    n_decoder_heads: int = 8
-    embed_size: int = 512
-    d_ff: int = 2048
-    max_len: int = 4096
-    tie_embeddings: bool = True
-    post_ln: bool = True
-    add_two_layer_norms: bool = False
-    use_additional_dropout: bool = False
-    xavier_initialization: bool = False
-
-    # Training process
     batch_size: int = 128
     epochs: int = 8
     base_lr: float = 0.8
@@ -42,6 +29,7 @@ class TrainConfig:
     accumulation_steps: int = 10
     label_smoothing: float = 0.1
     use_cross_entropy: bool = True
+    seed: int = 42
 
 
 def set_seed(seed: int | None = 42):
@@ -55,7 +43,7 @@ def set_seed(seed: int | None = 42):
     torch.backends.cudnn.benchmark = False
 
 
-def prepare_training(config: TrainConfig):
+def prepare_training(config: TrainConfig, transformer_config: "TransformerConfig"):
     set_seed(config.seed)
     data = load_data("raw")
     train_size = int(len(data) * config.train_fraction)
@@ -73,21 +61,7 @@ def prepare_training(config: TrainConfig):
         tokenizer = get_tokenizer(config.tokenizer_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Transformer(
-        vocab_size=tokenizer.get_vocab_size(),
-        n_encoder_layers=config.n_encoder_layers,
-        n_decoder_layers=config.n_decoder_layers,
-        n_encoder_heads=config.n_encoder_heads,
-        n_decoder_heads=config.n_decoder_heads,
-        embed_size=config.embed_size,
-        d_ff=config.d_ff,
-        max_len=config.max_len,
-        tie_embeddings=config.tie_embeddings,
-        post_ln=config.post_ln,
-        add_two_layer_norms=config.add_two_layer_norms,
-        use_additional_dropout=config.use_additional_dropout,
-        xavier_initialization=config.xavier_initialization,
-    ).to(device)
+    model = Transformer(transformer_config).to(device)
     generator = Generator(
         model,
         tokenizer.token_to_id("[START]"),
@@ -213,8 +187,9 @@ def cherry_pick_generation(val_data, tokenizer, generator, n_picks, device):
         )
 
 
-def train_main(config: TrainConfig):
-    prep = prepare_training(config)
+def train_main(config: TrainConfig, transformer_config: "TransformerConfig", save_path: str):
+    os.mkdir(save_path)
+    prep = prepare_training(config, transformer_config)
     train_data = prep["train_data"]
     val_data = prep["val_data"]
     train_epoch_batches = prep["train_epoch_batches"]
@@ -271,7 +246,7 @@ def train_main(config: TrainConfig):
 
         torch.cuda.empty_cache()
 
-    torch.save(model.state_dict(), config.model_save_path)
+    model.save_pretrained(save_path)
 
     return {
         "epoch_train_loss": (epoch_indices, epoch_train_losses),
@@ -281,6 +256,10 @@ def train_main(config: TrainConfig):
 
 
 if __name__ == "__main__":
-    train_main(TrainConfig(
-        model_save_path="model.pth",
-    ))
+    from transformer import TransformerConfig
+
+    train_main(
+        TrainConfig(),
+        TransformerConfig(),
+        "model",
+    )
