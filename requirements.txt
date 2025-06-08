@@ -1,5 +1,4 @@
 torch
-tqdm
 tokenizers
 numpy
 datasets

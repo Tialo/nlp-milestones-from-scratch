@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import torch
 import numpy as np
-from tqdm.auto import tqdm
 
 from generator import Generator
 from transformer import Transformer
@@ -127,11 +126,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
     step_indices = []
     step_losses = []
 
-    for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
-        data_iterator,
-        total=train_epoch_batches,
-        desc=f"Train epoch {epoch_index}",
-    )):
+    for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator):
         src_tokens = src_tokens.to(device)  # (batch_size, seq_len_src)
         tgt_inputs = tgt_tokens[:, :-1].to(device)  # (batch_size, seq_len_tgt - 1)
         tgt_labels = tgt_tokens[:, 1:].to(device)  # (batch_size, seq_len_tgt - 1)
@@ -172,11 +167,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
 def validate_one_epoch(model, data_iterator, criterion, device, val_data, tokenizer, generator, batch_size, epoch_index):
     model.eval()
     epoch_val_loss_history = []
-    for src_tokens, tgt_tokens, src_mask in tqdm(
-        data_iterator,
-        total=len(val_data) // (2 * batch_size),
-        desc=f"Val epoch {epoch_index}",
-    ):
+    for src_tokens, tgt_tokens, src_mask in data_iterator:
         src_tokens = src_tokens.to(device)
         tgt_inputs = tgt_tokens[:, :-1].to(device)
         tgt_labels = tgt_tokens[:, 1:].to(device)
