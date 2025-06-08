@@ -92,7 +92,7 @@ def rate(step: int, d_model: int = 512, warmup: int = 4000):
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
 
-def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, train_epoch_batches, accumulation_steps, global_step, epoch_index):
+def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, train_epoch_batches, accumulation_steps, global_step, epoch_index, n_epochs):
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
@@ -101,7 +101,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
     step_losses = []
 
     batch_digits = len(str(train_epoch_batches))
-    print(f"Epoch {epoch_index+1}")
+    print(f"Epoch: [{epoch_index+1}/{n_epochs}]")
     for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator):
         src_tokens = src_tokens.to(device)
         tgt_inputs = tgt_tokens[:, :-1].to(device)
@@ -224,7 +224,7 @@ def train_main(config: TrainConfig, transformer_config: "TransformerConfig", sav
         )
         epoch_train_loss_avg, global_step, step_x, step_losses = train_one_epoch(
             model, train_iterator, criterion, opt, scheduler, device,
-            train_epoch_batches, config.accumulation_steps, global_step, e
+            train_epoch_batches, config.accumulation_steps, global_step, e, config.epochs
         )
         epoch_indices.append(e)
         epoch_train_losses.append(epoch_train_loss_avg)
