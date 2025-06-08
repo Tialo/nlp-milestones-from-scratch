@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import torch
 import numpy as np
-from clearml import Task
 from tqdm.auto import tqdm
 
 from generator import Generator
@@ -18,11 +17,9 @@ from data_utils import get_data_batch_iterator, load_data
 @dataclass
 class TrainConfig:
     # Misc
-    clearml_task: str
     model_save_path: str
     seed: int = 42
     tokenizer_path: str = "tokenizer.json"
-    clearml_project: str = "vanilla-transformer"
 
     # Model architecture
     n_encoder_layers: int = 6
@@ -122,7 +119,7 @@ def rate(step: int, d_model: int = 512, warmup: int = 4000):
     return d_model ** (-0.5) * min(step ** (-0.5), step * warmup ** (-1.5))
 
 
-def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, task, train_epoch_batches, accumulation_steps, global_step, epoch_index):
+def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, train_epoch_batches, accumulation_steps, global_step, epoch_index):
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
@@ -155,10 +152,10 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tas
             or batch_index + 1 == train_epoch_batches
         ):
             mean_loss = accumulated_loss / backwards_since_last_step
-            task.logger.report_scalar("step_loss", "train", mean_loss, global_step)
+            percent = (batch_index + 1) / train_epoch_batches * 100
             current_lr = scheduler.get_last_lr()[0]
-            task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
-
+            if percent % 5 < 100 / train_epoch_batches:
+                print(f"Epoch {epoch_index+1} [{batch_index+1}/{train_epoch_batches}] ({percent:.1f}%): Step loss: {mean_loss:.4f}, LR: {current_lr:.6f}")
             opt.step()
             opt.zero_grad()
             scheduler.step()
@@ -172,7 +169,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tas
 
 
 @torch.no_grad
-def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, tokenizer, generator, batch_size, epoch_index):
+def validate_one_epoch(model, data_iterator, criterion, device, val_data, tokenizer, generator, batch_size, epoch_index):
     model.eval()
     epoch_val_loss_history = []
     for src_tokens, tgt_tokens, src_mask in tqdm(
@@ -201,32 +198,15 @@ def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, 
             # 6.1 We set the maximum output length during inference to input length + 50, but terminate early when possible
             max_tokens=len(src_tokens) + 50,
         )
-
-        task.logger.report_text(
-            "Validation example\n"
-            f"Source: {decode(tokenizer, src_tokens)}\n"
-            f"Target: {decode(tokenizer, tgt_tokens)}\n"
-            f"Generated: {decode(tokenizer, generated)}\n\n",
-            print_console=False,
-        )
+        print("Validation example\n"
+              f"Source: {decode(tokenizer, src_tokens)}\n"
+              f"Target: {decode(tokenizer, tgt_tokens)}\n"
+              f"Generated: {decode(tokenizer, generated)}\n\n")
 
     return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
 
 def train_main(config: TrainConfig):
-    task = Task.init(
-        project_name=config.clearml_project,
-        task_name=config.clearml_task,
-    )
-    task.connect({
-        "batch_size": config.batch_size,
-        "epochs": config.epochs,
-        "warmup_fraction": config.warmup_fraction,
-        "train_fraction": config.train_fraction,
-        "accumulation_steps": config.accumulation_steps,
-        "base_lr": config.base_lr,
-    })
-
     prep = prepare_training(config)
     train_data = prep["train_data"]
     val_data = prep["val_data"]
@@ -258,14 +238,14 @@ def train_main(config: TrainConfig):
             batch_size=config.batch_size,
         )
         epoch_train_loss_avg, global_step, step_x, step_losses = train_one_epoch(
-            model, train_iterator, criterion, opt, scheduler, device, task,
+            model, train_iterator, criterion, opt, scheduler, device,
             train_epoch_batches, config.accumulation_steps, global_step, e
         )
         epoch_indices.append(e)
         epoch_train_losses.append(epoch_train_loss_avg)
         step_indices.extend(step_x)
         step_train_losses.extend(step_losses)
-        task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
+        print(f"Epoch {e+1}: Train loss: {epoch_train_loss_avg:.4f}")
 
         val_iterator = get_data_batch_iterator(
             val_data,
@@ -273,16 +253,14 @@ def train_main(config: TrainConfig):
             batch_size=2 * config.batch_size,
         )
         epoch_val_loss_avg = validate_one_epoch(
-            model, val_iterator, criterion, device, task, val_data, tokenizer, generator, config.batch_size, e
+            model, val_iterator, criterion, device, val_data, tokenizer, generator, config.batch_size, e
         )
         epoch_val_losses.append(epoch_val_loss_avg)
-        task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
+        print(f"Epoch {e+1}: Valid loss: {epoch_val_loss_avg:.4f}")
 
         torch.cuda.empty_cache()
 
     torch.save(model.state_dict(), config.model_save_path)
-
-    task.close()
 
     return {
         "epoch_train_loss": (epoch_indices, epoch_train_losses),
@@ -293,6 +271,5 @@ def train_main(config: TrainConfig):
 
 if __name__ == "__main__":
     train_main(TrainConfig(
-        clearml_task="transfromer-training",
         model_save_path="model.pth",
     ))
