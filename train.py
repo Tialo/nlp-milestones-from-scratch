@@ -14,38 +14,39 @@ from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
+
 @dataclass
 class TrainConfig:
-    # Model architecture
-    n_encoder_layers = 6
-    n_decoder_layers = 6
-    n_encoder_heads = 8
-    n_decoder_heads = 8
-    embed_size = 512
-    d_ff = 2048
-    max_len = 4096
-    tie_embeddings = True
-    post_ln = True
-    add_two_layer_norms = False
-    use_additional_dropout = False
-    xavier_initialization = False
-
-    # Training process
-    batch_size = 128
-    epochs = 8
-    base_lr = 0.8
-    train_fraction = 0.8
-    warmup_fraction = 0.3  # original paper used 4% of data for a warmup
-    accumulation_steps = 10
-    label_smoothing = 0.1
-    use_cross_entropy = True
-
     # Misc
-    seed = 42
-    tokenizer_path = "tokenizer.json"
-    clearml_project: str
     clearml_task: str
     model_save_path: str
+    seed: int = 42
+    tokenizer_path: str = "tokenizer.json"
+    clearml_project: str = "vanilla-transformer"
+
+    # Model architecture
+    n_encoder_layers: int = 6
+    n_decoder_layers: int = 6
+    n_encoder_heads: int = 8
+    n_decoder_heads: int = 8
+    embed_size: int = 512
+    d_ff: int = 2048
+    max_len: int = 4096
+    tie_embeddings: bool = True
+    post_ln: bool = True
+    add_two_layer_norms: bool = False
+    use_additional_dropout: bool = False
+    xavier_initialization: bool = False
+
+    # Training process
+    batch_size: int = 128
+    epochs: int = 8
+    base_lr: float = 0.8
+    train_fraction: float = 0.8
+    warmup_fraction: float = 0.3  # original paper used 4% of data for a warmup
+    accumulation_steps: int = 10
+    label_smoothing: float = 0.1
+    use_cross_entropy: bool = True
 
 
 def set_seed(seed: int | None = 42):
@@ -281,6 +282,8 @@ def train_main(config: TrainConfig):
 
     torch.save(model.state_dict(), config.model_save_path)
 
+    task.close()
+
     return {
         "epoch_train_loss": (epoch_indices, epoch_train_losses),
         "epoch_val_loss": (epoch_indices, epoch_val_losses),
@@ -290,7 +293,6 @@ def train_main(config: TrainConfig):
 
 if __name__ == "__main__":
     train_main(TrainConfig(
-        clearml_project="vanilla-transformer",
         clearml_task="transfromer-training",
         model_save_path="model.pth",
     ))

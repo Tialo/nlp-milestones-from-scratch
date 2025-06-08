@@ -1,12 +1,4 @@
 .idea
 __pycache__
-data.txt
-tokenizer_src.json
-tokenizer_tgt.json
-train_loss.json
-val_loss.json
-best_model.pth
+tokenizer.json
 venv
-train_data.txt
-main.ipynb
-best_val_loss.txt
