@@ -1,10 +1,13 @@
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 
 import torch
 from datasets import load_dataset
 
+if TYPE_CHECKING:
+    from tokenizers import Tokenizer
 
-def load_data(split: Literal["simplified", "raw"] = "simplified"):
+
+def load_data(split: Literal["simplified", "raw"] = "simplified") -> list[tuple[str, str]]:
     dataset = load_dataset('seara/ru_go_emotions', split)
     data = []
     if split == "simplified":
@@ -19,7 +22,7 @@ def load_data(split: Literal["simplified", "raw"] = "simplified"):
     return data
 
 
-def get_data_batch_iterator(data, tokenizer, batch_size: int = 16):
+def get_data_batch_iterator(data: list[tuple[str, str]], tokenizer: "Tokenizer", batch_size: int = 16):
     for i in range(0, len(data), batch_size):
         batch_data = data[i:i+batch_size]
         src_data, tgt_data = zip(*batch_data)

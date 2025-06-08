@@ -8,7 +8,7 @@ from tokenizers.processors import TemplateProcessing
 from tokenizers.decoders import BPEDecoder
 
 
-def build_tokenizer(data: list[list[str]], save_path: str):
+def build_tokenizer(data: list[tuple[str, str]], save_path: str) -> Tokenizer:
     language_src, language_tgt = zip(*data)
     data = language_src + language_tgt
     tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
@@ -35,11 +35,11 @@ def build_tokenizer(data: list[list[str]], save_path: str):
     return tokenizer
 
 
-def get_tokenizer(tokenizer_path: str):
+def get_tokenizer(tokenizer_path: str) -> Tokenizer:
     return Tokenizer.from_file(tokenizer_path)
 
 
-def decode(tokenizer, sequence) -> str:
+def decode(tokenizer: Tokenizer, sequence: list[int] | torch.Tensor) -> str:
     if isinstance(sequence, torch.Tensor):
         if sequence.ndim == 2:
             if sequence.shape[0] != 1:

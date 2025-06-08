@@ -12,7 +12,6 @@ from tokenizer_utils import get_tokenizer, decode, build_tokenizer
 from data_utils import get_data_batch_iterator, load_data
 
 
-
 @dataclass
 class TrainConfig:
     # Misc
@@ -126,13 +125,15 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
     step_indices = []
     step_losses = []
 
+    batch_digits = len(str(train_epoch_batches))
+    print(f"Epoch {epoch_index+1}")
     for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator):
-        src_tokens = src_tokens.to(device)  # (batch_size, seq_len_src)
-        tgt_inputs = tgt_tokens[:, :-1].to(device)  # (batch_size, seq_len_tgt - 1)
-        tgt_labels = tgt_tokens[:, 1:].to(device)  # (batch_size, seq_len_tgt - 1)
+        src_tokens = src_tokens.to(device)
+        tgt_inputs = tgt_tokens[:, :-1].to(device)
+        tgt_labels = tgt_tokens[:, 1:].to(device)
         src_mask = src_mask.to(device)
 
-        logits = model(src_tokens, tgt_inputs, src_mask=src_mask)  # (batch_size, seq_len_tgt, vocab_size)
+        logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
         loss = criterion(
             logits.view(-1, logits.size(-1)),
             tgt_labels.view(-1),
@@ -142,15 +143,26 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
         loss.backward()
         backwards_since_last_step += 1
 
+        # Print every 5% of progress, but only batch/total, no percent
+        prev_percent = 100 * batch_index / train_epoch_batches
+        percent = 100 * (batch_index + 1) / train_epoch_batches
+        prev_threshold = int(prev_percent // 5)
+        current_threshold = int(percent // 5)
+        if current_threshold > prev_threshold:
+            current_lr = scheduler.get_last_lr()[0]
+            current_loss = accumulated_loss / backwards_since_last_step
+            print(
+                f"Step: [{str(batch_index+1).rjust(batch_digits)}/{train_epoch_batches}]",
+                f"Step loss: {current_loss:.4f}",
+                f"LR: {current_lr:.6f}",
+                sep=' | '
+            )
+
         if (
             (batch_index + 1) % accumulation_steps == 0
             or batch_index + 1 == train_epoch_batches
         ):
             mean_loss = accumulated_loss / backwards_since_last_step
-            percent = (batch_index + 1) / train_epoch_batches * 100
-            current_lr = scheduler.get_last_lr()[0]
-            if percent % 5 < 100 / train_epoch_batches:
-                print(f"Epoch {epoch_index+1} [{batch_index+1}/{train_epoch_batches}] ({percent:.1f}%): Step loss: {mean_loss:.4f}, LR: {current_lr:.6f}")
             opt.step()
             opt.zero_grad()
             scheduler.step()
@@ -164,7 +176,7 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tra
 
 
 @torch.no_grad
-def validate_one_epoch(model, data_iterator, criterion, device, val_data, tokenizer, generator, batch_size, epoch_index):
+def validate_one_epoch(model, data_iterator, criterion, device):
     model.eval()
     epoch_val_loss_history = []
     for src_tokens, tgt_tokens, src_mask in data_iterator:
@@ -176,25 +188,29 @@ def validate_one_epoch(model, data_iterator, criterion, device, val_data, tokeni
         logits = model(src_tokens, tgt_inputs, src_mask=src_mask)
         loss = criterion(logits.view(-1, logits.size(-1)), tgt_labels.view(-1))
         epoch_val_loss_history.append(loss.item())
+    return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
+
+def cherry_pick_generation(val_data, tokenizer, generator, n_picks, device):
     val_batch_iterator = get_data_batch_iterator(
         val_data,
         tokenizer,
         batch_size=1,
     )
-    for _ in range(4):
+    print("Cherry picked generations:")
+    for _ in range(n_picks):
         src_tokens, tgt_tokens, _ = next(val_batch_iterator)
         generated = generator.generate(
             src_tokens.to(device),
             # 6.1 We set the maximum output length during inference to input length + 50, but terminate early when possible
             max_tokens=len(src_tokens) + 50,
         )
-        print("Validation example\n"
-              f"Source: {decode(tokenizer, src_tokens)}\n"
-              f"Target: {decode(tokenizer, tgt_tokens)}\n"
-              f"Generated: {decode(tokenizer, generated)}\n\n")
-
-    return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
+        print(
+            f"Source: {decode(tokenizer, src_tokens)}",
+            f"Target: {decode(tokenizer, tgt_tokens)}",
+            f"Generated: {decode(tokenizer, generated)}\n",
+            sep='\n'
+        )
 
 
 def train_main(config: TrainConfig):
@@ -236,7 +252,7 @@ def train_main(config: TrainConfig):
         epoch_train_losses.append(epoch_train_loss_avg)
         step_indices.extend(step_x)
         step_train_losses.extend(step_losses)
-        print(f"Epoch {e+1}: Train loss: {epoch_train_loss_avg:.4f}")
+        print(f"Train loss: {epoch_train_loss_avg:.4f}", end=' | ')
 
         val_iterator = get_data_batch_iterator(
             val_data,
@@ -244,10 +260,14 @@ def train_main(config: TrainConfig):
             batch_size=2 * config.batch_size,
         )
         epoch_val_loss_avg = validate_one_epoch(
-            model, val_iterator, criterion, device, val_data, tokenizer, generator, config.batch_size, e
+            model, val_iterator, criterion, device,
         )
         epoch_val_losses.append(epoch_val_loss_avg)
-        print(f"Epoch {e+1}: Valid loss: {epoch_val_loss_avg:.4f}")
+        print(f"Valid loss: {epoch_val_loss_avg:.4f}")
+        cherry_pick_generation(
+            val_data, tokenizer, generator, 4, device
+        )
+        print()
 
         torch.cuda.empty_cache()
 
