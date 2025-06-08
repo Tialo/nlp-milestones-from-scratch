@@ -122,6 +122,8 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tas
     epoch_loss_history = []
     accumulated_loss = 0
     backwards_since_last_step = 0
+    step_indices = []
+    step_losses = []
 
     for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(tqdm(
         data_iterator,
@@ -147,19 +149,21 @@ def train_one_epoch(model, data_iterator, criterion, opt, scheduler, device, tas
             (batch_index + 1) % accumulation_steps == 0
             or batch_index + 1 == train_epoch_batches
         ):
-            # log mean of accumulated loss
-            task.logger.report_scalar("step_loss", "train", accumulated_loss / backwards_since_last_step, global_step)
+            mean_loss = accumulated_loss / backwards_since_last_step
+            task.logger.report_scalar("step_loss", "train", mean_loss, global_step)
             current_lr = scheduler.get_last_lr()[0]
             task.logger.report_scalar("learning_rate", "lr", current_lr, global_step)
 
             opt.step()
             opt.zero_grad()
             scheduler.step()
+            step_indices.append(global_step)
+            step_losses.append(mean_loss)
             accumulated_loss = 0
             backwards_since_last_step = 0
             global_step += 1
 
-    return sum(epoch_loss_history) / len(epoch_loss_history), global_step
+    return sum(epoch_loss_history) / len(epoch_loss_history), global_step, step_indices, step_losses
 
 
 @torch.no_grad
@@ -203,6 +207,7 @@ def validate_one_epoch(model, data_iterator, criterion, device, task, val_data, 
 
     return sum(epoch_val_loss_history) / len(epoch_val_loss_history)
 
+
 def train_main(config: TrainConfig | None = None):
     config = config or TrainConfig()
     task = Task.init(
@@ -236,16 +241,26 @@ def train_main(config: TrainConfig | None = None):
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=lr_schedule)
 
     global_step = 0
+    epoch_indices = []
+    epoch_train_losses = []
+    epoch_val_losses = []
+    step_indices = []
+    step_train_losses = []
+
     for e in range(config.epochs):
         train_iterator = get_data_batch_iterator(
             train_data,
             tokenizer,
             batch_size=config.batch_size,
         )
-        epoch_train_loss_avg, global_step = train_one_epoch(
+        epoch_train_loss_avg, global_step, step_x, step_losses = train_one_epoch(
             model, train_iterator, criterion, opt, scheduler, device, task,
             train_epoch_batches, config.accumulation_steps, global_step, e
         )
+        epoch_indices.append(e)
+        epoch_train_losses.append(epoch_train_loss_avg)
+        step_indices.extend(step_x)
+        step_train_losses.extend(step_losses)
         task.logger.report_scalar("epoch_loss", "train", epoch_train_loss_avg, e)
 
         val_iterator = get_data_batch_iterator(
@@ -256,11 +271,18 @@ def train_main(config: TrainConfig | None = None):
         epoch_val_loss_avg = validate_one_epoch(
             model, val_iterator, criterion, device, task, val_data, tokenizer, generator, config.batch_size, e
         )
+        epoch_val_losses.append(epoch_val_loss_avg)
         task.logger.report_scalar("epoch_loss", "val", epoch_val_loss_avg, e)
 
         torch.cuda.empty_cache()
 
     torch.save(model.state_dict(), config.model_save_path)
+
+    return {
+        "epoch_train_loss": (epoch_indices, epoch_train_losses),
+        "epoch_val_loss": (epoch_indices, epoch_val_losses),
+        "step_train_loss": (step_indices, step_train_losses),
+    }
 
 
 if __name__ == "__main__":
