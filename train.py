@@ -181,8 +181,8 @@ def cherry_pick_generation(val_data, tokenizer, generator, n_picks, device):
             max_tokens=len(src_tokens) + 50,
         )
         print(
-            f"Source: {decode(tokenizer, src_tokens)}",
-            f"Target: {decode(tokenizer, tgt_tokens)}",
+            f"Source:    {decode(tokenizer, src_tokens)}",
+            f"Target:    {decode(tokenizer, tgt_tokens)}",
             f"Generated: {decode(tokenizer, generated)}\n",
             sep='\n'
         )
