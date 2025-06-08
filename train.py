@@ -316,7 +316,7 @@ def parse_args():
                            help='Label smoothing factor (default: 0.1)')
     train_group.add_argument('--use_cross_entropy', action='store_true', default=True,
                            help='Use cross entropy loss (default: True)')
-    train_group.add_argument('--no_cross_entropy', dest='use_cross_entropy', action='store_false',
+    train_group.add_argument('--use_kl_divergence', dest='use_cross_entropy', action='store_false',
                            help='Use KL divergence loss instead of cross entropy')
     train_group.add_argument('--seed', type=int, default=42,
                            help='Random seed (default: 42)')
