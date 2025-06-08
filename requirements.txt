@@ -2,3 +2,4 @@ torch
 tokenizers
 numpy
 datasets
+evaluate

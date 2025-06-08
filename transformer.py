@@ -362,3 +362,12 @@ class Transformer(nn.Module):
         torch.save(self.state_dict(), os.path.join(save_path, "model.pt"))
         with open(os.path.join(save_path, "config.json"), "w") as f:
             json.dump(asdict(self.config), f, indent=2)
+
+    @classmethod
+    def from_pretrained(cls, pretrained_path: str):
+        with open(os.path.join(pretrained_path, "config.json")) as f:
+            config = json.load(f)
+        model = cls(TransformerConfig(**config))
+        state_dict = torch.load(os.path.join(pretrained_path, "model.pt"))
+        model.load_state_dict(state_dict)
+        return model
