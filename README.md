@@ -8,7 +8,7 @@ So I built this version from scratch. It follows the paper closely by default, b
 
 * Clone the project and install requirements:
 ```bash
-git clone git@github.com:Tialo/vanilla-transformer.git
+git clone git@github.com:Tialo/pure-vanilla-transformer-from-scratch.git
 cd vanilla-transformer
 python3 -m venv venv
 source venv/bin/activate
