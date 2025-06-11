@@ -69,9 +69,8 @@ class ScaledDotProductAttention(nn.Module):
         k = k.transpose(-1, -2)  # (batch_size, n_heads, head_dim, seq_len_kv)
         attn_weights = q @ k / d_k**0.5  # (batch_size, n_heads, seq_len_q, seq_len_kv)
         if mask is not None:
-            mask = mask.unsqueeze(
-                1
-            )  # (1, 1, seq_len_qkv, seq_len_qkv) in case of any self-attention
+            mask = mask.unsqueeze(1)
+            # (1, 1, seq_len_qkv, seq_len_qkv) in case of any self-attention
             # (batch_size, 1, 1, seq_len) otherwise
             attn_weights = attn_weights.masked_fill(mask == 0, float("-inf"))
         attn_weights = torch.softmax(attn_weights, dim=-1)
@@ -123,19 +122,15 @@ class MultiHeadAttention(nn.Module):
         # k = k.view(batch_size, self.n_heads, k.size(1), self.head_dim)
         # v = v.view(batch_size, self.n_heads, v.size(1), self.head_dim)
 
-        q = q.view(batch_size, q.size(1), self.n_heads, self.head_dim).transpose(
-            1, 2
-        )  # (batch_size, n_heads, seq_len_q, head_dim)
-        k = k.view(batch_size, k.size(1), self.n_heads, self.head_dim).transpose(
-            1, 2
-        )  # (batch_size, n_heads, seq_len_kv, head_dim)
-        v = v.view(batch_size, v.size(1), self.n_heads, self.head_dim).transpose(
-            1, 2
-        )  # (batch_size, n_heads, seq_len_kv, head_dim)
+        # (batch_size, n_heads, seq_len_q, head_dim)
+        q = q.view(batch_size, q.size(1), self.n_heads, self.head_dim).transpose(1, 2)
+        # (batch_size, n_heads, seq_len_kv, head_dim)
+        k = k.view(batch_size, k.size(1), self.n_heads, self.head_dim).transpose(1, 2)
+        # (batch_size, n_heads, seq_len_kv, head_dim)
+        v = v.view(batch_size, v.size(1), self.n_heads, self.head_dim).transpose(1, 2)  
 
-        attentions = self.sdpa(
-            q, k, v, mask=mask
-        )  # (batch_size, n_heads, seq_len_q, head_dim)
+        # (batch_size, n_heads, seq_len_q, head_dim)
+        attentions = self.sdpa(q, k, v, mask=mask)  
         # this won't work without .transpose(1, 2).contiguous()
         attentions = (
             attentions.transpose(1, 2)
@@ -188,16 +183,14 @@ class EncoderLayer(nn.Module):
         """
         if self.post_ln:
             attention = self.ln1(x + self.dropout1(self.mha(x, x, x, mask)))
-            return self.ln2(
-                attention + self.dropout2(self.ff(attention))
-            )  # (batch_size, seq_len_src, embed_size)
+            # (batch_size, seq_len_src, embed_size)
+            return self.ln2(attention + self.dropout2(self.ff(attention)))  
         else:
             x_ln = self.ln1(x)
             attention = x + self.dropout1(self.mha(x_ln, x_ln, x_ln, mask))
             attention_ln = self.ln2(attention)
-            return attention + self.dropout2(
-                self.ff(attention_ln)
-            )  # (batch_size, seq_len_src, embed_size)
+            # (batch_size, seq_len_src, embed_size)
+            return attention + self.dropout2(self.ff(attention_ln))  
 
 
 class Encoder(nn.Module):
@@ -277,27 +270,22 @@ class DecoderLayer(nn.Module):
         encoder_mask - (batch_size, 1, seq_len_src)
         """
         if self.post_ln:
-            attention = self.ln1(
-                x + self.dropout1(self.mmha(x, x, x, mask=causal_mask))
-            )  # (batch_size, seq_len_tgt, embed_size)
+            # (batch_size, seq_len_tgt, embed_size)
+            attention = self.ln1(x + self.dropout1(self.mmha(x, x, x, mask=causal_mask)))
             attention = self.ln2(
                 attention
                 + self.dropout2(self.mha(attention, memory, memory, mask=encoder_mask))
             )
-            return self.ln3(
-                attention + self.dropout3(self.ff(attention))
-            )  # (batch_size, seq_len_tgt, embed_size)
+            # (batch_size, seq_len_tgt, embed_size)
+            return self.ln3(attention + self.dropout3(self.ff(attention)))  
         else:
             x_ln = self.ln1(x)
             attention = x + self.dropout1(self.mmha(x_ln, x_ln, x_ln, mask=causal_mask))
             attention_ln = self.ln2(attention)
-            attention = attention + self.dropout2(
-                self.mha(attention_ln, memory, memory, mask=encoder_mask)
-            )
+            attention = attention + self.dropout2(self.mha(attention_ln, memory, memory, mask=encoder_mask))
             attention_ln = self.ln3(attention)
-            return attention + self.dropout3(
-                self.ff(attention_ln)
-            )  # (batch_size, seq_len_tgt, embed_size)
+            # (batch_size, seq_len_tgt, embed_size)
+            return attention + self.dropout3(self.ff(attention_ln))  
 
 
 class Decoder(nn.Module):
@@ -344,9 +332,8 @@ class Decoder(nn.Module):
             .to(x.device)
         )  # (1, seq_len_tgt, seq_len_tgt)
         for decoder_layer in self.decoder_layers:
-            x = decoder_layer(
-                x, memory, tgt_mask, encoder_mask=encoder_mask
-            )  # (batch_size, seq_len_tgt, embed_size)
+            # (batch_size, seq_len_tgt, embed_size)
+            x = decoder_layer(x, memory, tgt_mask, encoder_mask=encoder_mask)  
         if self.final_ln is not None:
             x = self.final_ln(x)
         return x
@@ -379,7 +366,7 @@ class Transformer(nn.Module):
         )
 
         self.sqrt_dmodel = config.embed_size**0.5
-        # original paper used shared embedding layer for source and target
+        # original paper used shared embedding layer for source and target languages
         self.embeddings = nn.Embedding(config.vocab_size, config.embed_size)
         self.fc = nn.Linear(config.embed_size, config.vocab_size)
 
@@ -411,13 +398,11 @@ class Transformer(nn.Module):
         src_embed = self.embeddings(src)  # (batch_size, seq_len_src, embed_size)
         # 3.4 In the embedding layers, we multiply those weights by √dmodel
         src_embed *= self.sqrt_dmodel
-        src_embed += self.pos_enc[: src.size(1)].to(
-            src_embed.device
-        )  # (batch_size, seq_len_src, embed_size)
+        # (batch_size, seq_len_src, embed_size)
+        src_embed += self.pos_enc[: src.size(1)].to(src_embed.device)  
         src_embed = self.dropout(src_embed)  # (batch_size, seq_len_src, embed_size)
-        memory = self.encoder(
-            src_embed, mask=src_mask
-        )  # (batch_size, seq_len_src, embed_size)
+        # (batch_size, seq_len_src, embed_size)
+        memory = self.encoder(src_embed, mask=src_mask)  
         return memory, src_mask
 
     def decode(
@@ -436,9 +421,8 @@ class Transformer(nn.Module):
         tgt_embed *= self.sqrt_dmodel
         tgt_embed += self.pos_enc[: tgt.size(1)].to(tgt_embed.device)
         tgt_embed = self.dropout(tgt_embed)
-        attention = self.decoder(
-            tgt_embed, memory, encoder_mask=src_mask
-        )  # (batch_size, seq_len_tgt, embed_size)
+        # (batch_size, seq_len_tgt, embed_size)
+        attention = self.decoder(tgt_embed, memory, encoder_mask=src_mask)  
         return self.fc(attention)  # (batch_size, seq_len_tgt, vocab_size)
 
     def forward(
@@ -450,9 +434,8 @@ class Transformer(nn.Module):
         src_mask - (batch_size, seq_len_src)
         """
         memory, src_mask = self.encode(src, src_mask)
-        return self.decode(
-            memory, tgt, src_mask
-        )  # (batch_size, seq_len_tgt, vocab_size)
+        # (batch_size, seq_len_tgt, vocab_size)
+        return self.decode(memory, tgt, src_mask)
 
     def save_pretrained(self, save_path: str) -> None:
         torch.save(self.state_dict(), os.path.join(save_path, "model.pt"))
