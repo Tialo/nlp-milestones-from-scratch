@@ -32,9 +32,8 @@ def create_causal_mask(seq_len: int):
                 [1, 1, 1, 0],
                 [1, 1, 1, 1]], dtype=torch.uint8)
     """
-    return torch.tril(torch.ones(seq_len, seq_len), diagonal=0).type(
-        torch.uint8
-    )  # (seq_len, seq_len)
+    # (seq_len, seq_len)
+    return torch.tril(torch.ones(seq_len, seq_len), diagonal=0).type(torch.uint8)  
 
 
 def positional_encoding(seq_len: int, embed_size: int):
