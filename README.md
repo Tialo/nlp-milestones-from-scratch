@@ -57,4 +57,4 @@ This project is heavily inspired by [Annotated Transformer](https://github.com/h
 
 ### Note on the training
 
-If you will use more/less data or epochs, tune warmup_fraction accordingly
+If you will use more/less data or epochs, tune `warmup_fraction` accordingly
