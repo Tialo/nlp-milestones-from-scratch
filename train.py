@@ -1,9 +1,9 @@
 import os
-import random
 import json
+import random
 import argparse
 from typing import TYPE_CHECKING
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 import torch
 import numpy as np
@@ -12,7 +12,7 @@ from generator import Generator
 from transformer import Transformer
 from loss import LabelSmoothingLoss
 from tokenizer_utils import get_tokenizer, decode, build_tokenizer
-from data_utils import get_data_batch_iterator, load_data
+from data_utils import get_data_batch_iterator
 
 
 if TYPE_CHECKING:
@@ -21,11 +21,12 @@ if TYPE_CHECKING:
 
 @dataclass
 class TrainConfig:
+    train_path: str = "data/train.json"
+    val_path: str = "data/val.json"
     tokenizer_path: str = "tokenizer.json"
     batch_size: int = 128
     epochs: int = 8
-    base_lr: float = 0.8
-    train_fraction: float = 0.8
+    base_lr: float = 3e-4
     warmup_fraction: float = 0.3  # original paper used 4% of data for a warmup
     accumulation_steps: int = 10
     label_smoothing: float = 0.1
@@ -46,12 +47,16 @@ def set_seed(seed: int | None = 42):
 
 def prepare_training(config: TrainConfig, transformer_config: "TransformerConfig"):
     set_seed(config.seed)
-    data = load_data("raw")
-    train_size = int(len(data) * config.train_fraction)
-    train_data = data[:train_size]
-    val_data = data[train_size:]
+    if not os.path.isfile(config.train_path):
+        raise FileNotFoundError(f"Training data file {config.train_path} not found.")
+    if not os.path.isfile(config.val_path):
+        raise FileNotFoundError(f"Validation data file {config.val_path} not found.")
+    with open(config.train_path, "r", encoding="utf-8") as f:
+        train_data = json.load(f)
+    with open(config.val_path, "r", encoding="utf-8") as f:
+        val_data = json.load(f)
 
-    train_epoch_batches = (train_size + config.batch_size - 1) // config.batch_size
+    train_epoch_batches = (len(train_data) + config.batch_size - 1) // config.batch_size
     train_epoch_steps = (
         train_epoch_batches + config.accumulation_steps - 1
     ) // config.accumulation_steps
@@ -76,10 +81,10 @@ def prepare_training(config: TrainConfig, transformer_config: "TransformerConfig
         use_cross_entropy=config.use_cross_entropy,
     )
     return {
-        "data": data,
         "train_data": train_data,
         "val_data": val_data,
         "train_epoch_batches": train_epoch_batches,
+        "train_epoch_steps": train_epoch_steps,
         "warmup_steps": warmup_steps,
         "tokenizer": tokenizer,
         "device": device,
@@ -102,6 +107,7 @@ def train_one_epoch(
     scheduler,
     device,
     train_epoch_batches,
+    train_epoch_steps,
     accumulation_steps,
     global_step,
     epoch_index,
@@ -110,13 +116,12 @@ def train_one_epoch(
     model.train()
     epoch_loss_history = []
     accumulated_loss = 0
-    backwards_since_last_step = 0
     step_indices = []
     step_losses = []
 
-    batch_digits = len(str(train_epoch_batches))
+    steps_digits = len(str(train_epoch_steps))
     print(f"Epoch: [{epoch_index + 1}/{n_epochs}]")
-    for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator):
+    for batch_index, (src_tokens, tgt_tokens, src_mask) in enumerate(data_iterator, 1):
         src_tokens = src_tokens.to(device)
         tgt_inputs = tgt_tokens[:, :-1].to(device)
         tgt_labels = tgt_tokens[:, 1:].to(device)
@@ -126,38 +131,33 @@ def train_one_epoch(
         loss = criterion(
             logits.view(-1, logits.size(-1)),
             tgt_labels.view(-1),
-        )
+        ) / accumulation_steps
+
         epoch_loss_history.append(loss.item())
         accumulated_loss += loss.item()
         loss.backward()
-        backwards_since_last_step += 1
 
-        # Print every 5% of progress, but only batch/total, no percent
-        prev_percent = 100 * batch_index / train_epoch_batches
-        percent = 100 * (batch_index + 1) / train_epoch_batches
-        prev_threshold = int(prev_percent // 5)
-        current_threshold = int(percent // 5)
-        if current_threshold > prev_threshold:
-            current_lr = scheduler.get_last_lr()[0]
-            current_loss = accumulated_loss / backwards_since_last_step
-            print(
-                f"Step: [{str(batch_index + 1).rjust(batch_digits)}/{train_epoch_batches}]",
-                f"Step loss: {current_loss:.4f}",
-                f"LR: {current_lr:.6f}",
-                sep=" | ",
-            )
-
-        if (
-            batch_index + 1
-        ) % accumulation_steps == 0 or batch_index + 1 == train_epoch_batches:
-            mean_loss = accumulated_loss / backwards_since_last_step
+        if batch_index % accumulation_steps == 0 or batch_index == train_epoch_batches:
+            # log 20 times (5% of steps) per epoch
+            step_index = batch_index // accumulation_steps
+            prev_percent = 100 * (step_index - 1) / train_epoch_steps
+            percent = 100 * step_index / train_epoch_steps
+            prev_threshold = int(prev_percent // 5)
+            current_threshold = int(percent // 5)
+            if current_threshold > prev_threshold:
+                current_lr = scheduler.get_last_lr()[0]
+                print(
+                    f"Step: [{str(step_index).rjust(steps_digits)}/{train_epoch_steps}]",
+                    f"Step loss: {accumulated_loss:.4f}",
+                    f"lr: {current_lr:.2e}",
+                    sep=" | ",
+                )
             opt.step()
             opt.zero_grad()
             scheduler.step()
             step_indices.append(global_step)
-            step_losses.append(mean_loss)
+            step_losses.append(accumulated_loss)
             accumulated_loss = 0
-            backwards_since_last_step = 0
             global_step += 1
 
     return (
@@ -218,6 +218,7 @@ def train_main(
     train_data = prep["train_data"]
     val_data = prep["val_data"]
     train_epoch_batches = prep["train_epoch_batches"]
+    train_epoch_steps = prep["train_epoch_steps"]
     warmup_steps = prep["warmup_steps"]
     tokenizer = prep["tokenizer"]
     device = prep["device"]
@@ -254,6 +255,7 @@ def train_main(
             scheduler,
             device,
             train_epoch_batches,
+            train_epoch_steps,
             config.accumulation_steps,
             global_step,
             e,
@@ -295,11 +297,12 @@ def train_main(
 
 def create_train_config_from_args(args) -> TrainConfig:
     return TrainConfig(
+        train_path=args.train_path,
+        val_path=args.val_path,
         tokenizer_path=args.tokenizer_path,
         batch_size=args.batch_size,
         epochs=args.epochs,
         base_lr=args.base_lr,
-        train_fraction=args.train_fraction,
         warmup_fraction=args.warmup_fraction,
         accumulation_steps=args.accumulation_steps,
         label_smoothing=args.label_smoothing,
@@ -333,10 +336,22 @@ def parse_args():
 
     train_group = parser.add_argument_group("Training Configuration")
     train_group.add_argument(
+        "--train_path",
+        type=str,
+        default="data/train.json",
+        help="Path to training data file (default: data/train.json)",
+    )
+    train_group.add_argument(
+        "--val_path",
+        type=str,
+        default="data/val.json",
+        help="Path to validation data file (default: data/val.json)",
+    )
+    train_group.add_argument(
         "--tokenizer_path",
         type=str,
         default="tokenizer.json",
-        help="Path to tokenizer file (default: tokenizer.json)",
+        help="Path to tokenizer file. If not exists it will be built using train data (default: tokenizer.json)",
     )
     train_group.add_argument(
         "--batch_size",
@@ -348,13 +363,7 @@ def parse_args():
         "--epochs", type=int, default=8, help="Number of training epochs (default: 8)"
     )
     train_group.add_argument(
-        "--base_lr", type=float, default=0.8, help="Base learning rate (default: 0.8)"
-    )
-    train_group.add_argument(
-        "--train_fraction",
-        type=float,
-        default=0.8,
-        help="Fraction of data to use for training (default: 0.8)",
+        "--base_lr", type=float, default=.4, help="Base learning rate (default: 5e-3)"
     )
     train_group.add_argument(
         "--warmup_fraction",

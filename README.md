@@ -14,13 +14,17 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
-* To **train** a model on the en/ru NMT dataset, simply run:
+* To **download data** for training, simply run:
 ```bash
-python train.py
+python data_utils.py --save_path data --train_fraction 0.8
+```
+* To **train** a model on downloaded data, run:
+```bash
+python train.py --train_path data/train.json --val_path data/val.json --save_path model
 ```
 * To **evaluate** a model and compute the BLEU score, run:
 ```bash
-python evaluate_model.py model tokenizer.json
+python evaluate_model.py --model_path model --tokenizer_path tokenizer.json
 ```
 * To change architecture or training parameters, see:
 ```bash

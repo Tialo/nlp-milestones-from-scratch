@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import torch
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
@@ -7,10 +9,15 @@ from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.decoders import BPEDecoder
 
+if TYPE_CHECKING:
+    from data_utils import DataSample
 
-def build_tokenizer(data: list[tuple[str, str]], save_path: str) -> Tokenizer:
-    language_src, language_tgt = zip(*data)
-    data = language_src + language_tgt
+
+def build_tokenizer(train_data: list["DataSample"], save_path: str) -> Tokenizer:
+    data = []
+    for sample in train_data:
+        data.append(sample["src"])
+        data.append(sample["tgt"])
     tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
     tokenizer.pre_tokenizer = Whitespace()
     tokenizer.normalizer = Sequence([NFKD(), StripAccents()])

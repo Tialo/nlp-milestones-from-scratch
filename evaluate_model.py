@@ -1,4 +1,5 @@
 import os
+import json
 import argparse
 
 import torch
@@ -7,13 +8,11 @@ import evaluate
 from transformer import Transformer
 from generator import Generator
 from tokenizer_utils import get_tokenizer, decode
-from data_utils import load_data
 
 
-def evaluate_model(model_path, tokenizer_path, bleu_samples=1000, verbose: bool = True):
-    data = load_data("raw")
-    train_size = int(len(data) * 0.8)
-    val_data = data[train_size:]
+def evaluate_model(model_path, tokenizer_path, val_data_path, bleu_samples=1000, verbose: bool = True):
+    with open(val_data_path, encoding="utf-8") as f:
+        val_data = json.load(f)
 
     tokenizer = get_tokenizer(tokenizer_path)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -57,12 +56,15 @@ def main():
     )
 
     parser.add_argument(
-        "model_path",
+        "--model_path",
         type=str,
-        help="Path to the saved model file (.pth) or model directory",
+        help="Path to the saved model directory",
     )
     parser.add_argument(
-        "tokenizer_path", type=str, help="Path to the tokenizer file (.json)"
+        "--tokenizer_path", type=str, help="Path to the tokenizer file (.json)"
+    )
+    parser.add_argument(
+        "--val_data_path", type=str, help="Path to the validation data file (.json)"
     )
     parser.add_argument(
         "--bleu_samples",
@@ -84,6 +86,9 @@ def main():
 
     if not os.path.isfile(args.tokenizer_path):
         raise ValueError(f"Error: Tokenizer path does not exist: {args.tokenizer_path}")
+
+    if not os.path.isfile(args.val_data_path):
+        raise ValueError(f"Error: Validation data path does not exist: {args.val_data_path}")
 
     avg_bleu = evaluate_model(args.model_path, args.tokenizer_path, args.bleu_samples)
     print(f"\nAverage BLEU: {avg_bleu:.2f}%")
