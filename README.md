@@ -1,6 +1,6 @@
 ### Pure Vanilla Transformer from scratch
 
-I started this project because I wanted a clearer understanding of the Transformer architecture. While reading *Attention Is All You Need*, I set out to implement it as closely as possible to the original paper. However, most available implementations included later tweaks and improvements. That made me wonder if I fully understood the original design.
+I started this project because I wanted a clearer understanding of the Transformer architecture. While reading *Attention Is All You Need*, I focused on implementing it as closely as possible to the original paper. However, most available implementations included later more advanced and improvements. That made me wonder if I fully understood the original design.
 
 So I built this version from scratch. It follows the paper closely by default, but also allows you to enable more modern practices to see how they affect performance and compare results.
 
@@ -24,7 +24,7 @@ python train.py --train_path data/train.json --val_path data/val.json --save_pat
 ```
 * To **evaluate** a model and compute the BLEU score, run:
 ```bash
-python evaluate_model.py --model_path model --tokenizer_path tokenizer.json
+python evaluate_model.py --model_path model --tokenizer_path tokenizer.json --val_path data/val.json
 ```
 * To change architecture or training parameters, see:
 ```bash
@@ -34,10 +34,6 @@ python train.py --help
 ### Training Tweaks Explained
 
 This project is heavily inspired by [Annotated Transformer](https://github.com/harvardnlp/annotated-transformer/), where most advanced techniques were used.
-
-* `--use_cross_entropy` and `--use_kl_divergence`
-
-    Uses custom cross-entropy loss or KL divergence loss between the label-smoothed distribution and the predicted distribution. Since KLDiv = CE - entropy, and the gradient of entropy with respect to the model's parameters is 0, the gradient of KLDiv equals that of CE. Implemented this parameter just to verify this relation. This parameter changes optimization function.
 
 * `--tie_embeddings` and `--no_tie_embeddings`
 
@@ -54,3 +50,11 @@ This project is heavily inspired by [Annotated Transformer](https://github.com/h
 * `--xavier_initialization`
 
     Initialize model parameters using `xavier_uniform_`.
+
+* `--use_cross_entropy` and `--use_kl_divergence`
+
+    Uses custom cross-entropy loss or KL divergence loss between the label-smoothed distribution and the predicted distribution. Since KLDiv = CE - entropy, and the gradient of entropy with respect to the model's parameters is 0, the gradient of KLDiv equals that of CE. Implemented this parameter just to verify this relation. This parameter changes optimization function.
+
+### Note on the training
+
+If you will use more/less data or epochs, tune warmup_fraction accordingly
