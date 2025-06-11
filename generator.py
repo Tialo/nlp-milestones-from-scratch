@@ -25,9 +25,8 @@ class Generator:
         generated - (batch_size, current_seq_len)
         """
         memory = memory.expand(generated.size(0), memory.size(1), memory.size(2))
-        logits = self.transformer.decode(
-            memory, generated
-        )  # (batch_size, current_seq_len, vocab_size)
+        # (batch_size, current_seq_len, vocab_size)
+        logits = self.transformer.decode(memory, generated)
         logits = logits[:, -1]  # (batch_size, vocab_size, )
         token_probs = logits.log_softmax(dim=-1)
         top_tokens = torch.topk(token_probs, k=n_beams, sorted=False, dim=-1)
@@ -67,9 +66,8 @@ class Generator:
             if not tokens_to_process:
                 break
 
-            batched_tokens_to_process = torch.tensor(tokens_to_process).to(
-                src.device
-            )  # (n_beams - len(finished_beams), current_seq_len)
+            # (n_beams - len(finished_beams), current_seq_len)
+            batched_tokens_to_process = torch.tensor(tokens_to_process).to(src.device)  
             top_tokens, proba = self._get_top_tokens(
                 memory, batched_tokens_to_process, n_beams
             )
