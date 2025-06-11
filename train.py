@@ -325,7 +325,6 @@ def create_transformer_config_from_args(args) -> "TransformerConfig":
         max_len=args.max_len,
         tie_embeddings=args.tie_embeddings,
         post_ln=args.post_ln,
-        add_two_layer_norms=args.add_two_layer_norms,
         use_additional_dropout=args.use_additional_dropout,
         xavier_initialization=args.xavier_initialization,
     )
@@ -465,12 +464,6 @@ def parse_args():
         dest="post_ln",
         action="store_false",
         help="Use pre-layer normalization instead of post-layer normalization",
-    )
-    model_group.add_argument(
-        "--add_two_layer_norms",
-        action="store_true",
-        default=False,
-        help="Add additional layer normalization layers (default: False)",
     )
     model_group.add_argument(
         "--use_additional_dropout",

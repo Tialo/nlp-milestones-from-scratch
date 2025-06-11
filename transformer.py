@@ -19,7 +19,6 @@ class TransformerConfig:
     max_len: int = 4096
     tie_embeddings: bool = True
     post_ln: bool = True
-    add_two_layer_norms: bool = False
     use_additional_dropout: bool = False
     xavier_initialization: bool = False
 
@@ -209,7 +208,6 @@ class Encoder(nn.Module):
         embed_size: int,
         d_ff: int,
         post_ln: bool = True,
-        final_ln: bool = False,
         use_additional_dropout: bool = False,
     ):
         super().__init__()
@@ -225,7 +223,7 @@ class Encoder(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
+        self.final_ln = None if post_ln else nn.LayerNorm(embed_size)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None):
         """
@@ -310,7 +308,6 @@ class Decoder(nn.Module):
         embed_size: int,
         d_ff: int,
         post_ln: bool = True,
-        final_ln: bool = False,
         use_additional_dropout: bool = False,
     ):
         super().__init__()
@@ -326,7 +323,7 @@ class Decoder(nn.Module):
                 for _ in range(n_layers)
             ]
         )
-        self.final_ln = nn.LayerNorm(embed_size) if final_ln else None
+        self.final_ln = None if post_ln else nn.LayerNorm(embed_size)
 
     def forward(
         self,
@@ -370,7 +367,6 @@ class Transformer(nn.Module):
             config.embed_size,
             config.d_ff,
             post_ln=config.post_ln,
-            final_ln=config.add_two_layer_norms,
             use_additional_dropout=config.use_additional_dropout,
         )
         self.decoder = Decoder(
@@ -379,7 +375,6 @@ class Transformer(nn.Module):
             config.embed_size,
             config.d_ff,
             post_ln=config.post_ln,
-            final_ln=config.add_two_layer_norms,
             use_additional_dropout=config.use_additional_dropout,
         )
 

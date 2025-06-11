@@ -45,11 +45,7 @@ This project is heavily inspired by [Annotated Transformer](https://github.com/h
 
 * `--post_ln` and `--pre_ln`
 
-    These parameters control the order in which Layer Normalization is applied in Encoder and Decoder Layers. [See also](https://github.com/harvardnlp/annotated-transformer/issues/92#issuecomment-1132966376) for more historical context.
-
-* `--add_two_layer_norms`
-
-    This parameter applies Layer Normalization to Encoder and Decoder outputs (not individual layers). 
+    These parameters control the order in which Layer Normalization is applied in Encoder and Decoder Layers. [See also](https://github.com/harvardnlp/annotated-transformer/issues/92#issuecomment-1132966376) for more historical context. If `pre_ln` is chosen, applies Layer Normalization to Encoder and Decoder (not individual layers) outputs, as it is done in GPT2 paper.
 
 * `--use_additional_dropout`
 
