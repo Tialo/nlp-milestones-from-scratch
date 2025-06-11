@@ -53,4 +53,4 @@ This project is heavily inspired by [Annotated Transformer](https://github.com/h
 
 * `--xavier_initialization`
 
-    This parameter applies `xavier_uniform_` parameters initialization to the model.
+    Initialize model parameters using `xavier_uniform_`
