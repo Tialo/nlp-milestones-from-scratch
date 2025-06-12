@@ -26,7 +26,7 @@ class TrainConfig:
     tokenizer_path: str = "tokenizer.json"
     batch_size: int = 128
     epochs: int = 8
-    base_lr: float = 3e-4
+    base_lr: float = 0.4
     warmup_fraction: float = 0.3  # original paper used 4% of data for a warmup
     accumulation_steps: int = 10
     label_smoothing: float = 0.1
@@ -362,7 +362,7 @@ def parse_args():
         "--epochs", type=int, default=8, help="Number of training epochs (default: 8)"
     )
     train_group.add_argument(
-        "--base_lr", type=float, default=.4, help="Base learning rate (default: 0.4)"
+        "--base_lr", type=float, default=0.4, help="Base learning rate (default: 0.4)"
     )
     train_group.add_argument(
         "--warmup_fraction",
