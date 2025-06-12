@@ -362,7 +362,7 @@ def parse_args():
         "--epochs", type=int, default=8, help="Number of training epochs (default: 8)"
     )
     train_group.add_argument(
-        "--base_lr", type=float, default=.4, help="Base learning rate (default: 5e-3)"
+        "--base_lr", type=float, default=.4, help="Base learning rate (default: 0.4)"
     )
     train_group.add_argument(
         "--warmup_fraction",
