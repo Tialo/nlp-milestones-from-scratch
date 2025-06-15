@@ -51,10 +51,6 @@ This project is heavily inspired by [Annotated Transformer](https://github.com/h
 
     Initialize model parameters using `xavier_uniform_`.
 
-* `--use_cross_entropy` and `--use_kl_divergence`
-
-    Uses custom cross-entropy loss or KL divergence loss between the label-smoothed distribution and the predicted distribution. Since KLDiv = CE - entropy, and the gradient of entropy with respect to the model's parameters is 0, the gradient of KLDiv equals that of CE. Implemented this parameter just to verify this relation. This parameter changes optimization function.
-
 ### Note on the training
 
 If you will use more/less data or epochs, tune `warmup_fraction` accordingly
