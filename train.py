@@ -30,7 +30,6 @@ class TrainConfig:
     warmup_fraction: float = 0.3  # original paper used 4% of data for a warmup
     accumulation_steps: int = 10
     label_smoothing: float = 0.1
-    use_cross_entropy: bool = True
     seed: int = 42
 
 
@@ -78,7 +77,6 @@ def prepare_training(config: TrainConfig, transformer_config: "TransformerConfig
     criterion = LabelSmoothingLoss(
         ignore_index=tokenizer.token_to_id("[PAD]"),
         smoothing=config.label_smoothing,
-        use_cross_entropy=config.use_cross_entropy,
     )
     return {
         "train_data": train_data,
@@ -306,7 +304,6 @@ def create_train_config_from_args(args) -> TrainConfig:
         warmup_fraction=args.warmup_fraction,
         accumulation_steps=args.accumulation_steps,
         label_smoothing=args.label_smoothing,
-        use_cross_entropy=args.use_cross_entropy,
         seed=args.seed,
     )
 
@@ -381,18 +378,6 @@ def parse_args():
         type=float,
         default=0.1,
         help="Label smoothing factor (default: 0.1)",
-    )
-    train_group.add_argument(
-        "--use_cross_entropy",
-        action="store_true",
-        default=True,
-        help="Use cross entropy loss (default: True)",
-    )
-    train_group.add_argument(
-        "--use_kl_divergence",
-        dest="use_cross_entropy",
-        action="store_false",
-        help="Use KL divergence loss instead of cross entropy",
     )
     train_group.add_argument(
         "--seed", type=int, default=42, help="Random seed (default: 42)"
