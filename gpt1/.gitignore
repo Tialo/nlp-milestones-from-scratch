@@ -1,0 +1,8 @@
+venv
+shards
+tokenizer.json
+__pycache__
+model
+log.txt
+raw_shards
+sft_results
