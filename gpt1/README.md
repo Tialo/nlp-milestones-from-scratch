@@ -51,8 +51,8 @@ However, on other datasets where the input length is appropriate, the model can 
 1. Clone the project and install requirements:
 
 ```bash
-git clone git@github.com:Tialo/gpt1-from-scratch.git
-cd gpt1-from-scratch
+git clone git@github.com:Tialo/nlp-milestones-from-scratch.git
+cd nlp-milestones-from-scratch/gpt1
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
