@@ -20,22 +20,22 @@ This dataset is of much higher quality than the one used in the original paper, 
 
 | Model | MNLI-m | MNLI-mm | SNLI | SciTail | QNLI | RTE |
 |-------|--------|---------|------|---------|------|-----|
-| GPT-1 (original) | **82.1** | **81.4** | **89.9** | 88.3 | **88.1** | 56.0 |
-| GPT-1 from scratch | 63.5 | 67.1 | - | **89.5** | 85.8 | **64.5** |
+| GPT-1 (original) | <u>82.1</u> | <u>81.4</u> | <u>89.9</u> | 88.3 | <u>88.1</u> | 56.0 |
+| GPT-1 from scratch | 63.5 | 67.1 | - | <u>89.5</u> | 85.8 | <u>64.5</u> |
 
 ### QA Results
 
 | Model | Story Cloze | RACE-m | RACE-h | RACE |
 |-------|-------------|--------|--------|------|
-| GPT-1 (original) | **86.5** | **62.9** | **57.4** | **59.0** |
+| GPT-1 (original) | <u>86.5</u> | <u>62.9</u> | <u>57.4</u> | <u>59.0</u> |
 | GPT-1 from scratch | - | 25 | 25 | 25 |
 
 ### Classification Results
 
 | Model | CoLA | SST2 | MRPC | STSB | QQP |
 |-------|------|------|------|------|-----|
-| GPT-1 (original) | **45.4** | **91.3** | 82.3 | **82.0** | 70.3 |
-| GPT-1 from scratch | 35.0 | 89.2 | **85.5** | 20.2 | **86.5** |
+| GPT-1 (original) | <u>45.4</u> | <u>91.3</u> | 82.3 | <u>82.0</u> | 70.3 |
+| GPT-1 from scratch | 35.0 | 89.2 | <u>85.5</u> | 20.2 | <u>86.5</u> |
 
 
 ## Interpretation of Results
