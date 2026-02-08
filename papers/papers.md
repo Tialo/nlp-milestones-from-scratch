@@ -29,6 +29,8 @@ todo:
 * FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning | https://arxiv.org/abs/2307.08691
 * Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
 * Qwen Technical Report | https://arxiv.org/abs/2309.16609
+* Mixtral of Experts | https://arxiv.org/abs/2401.04088
+* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/pdf/2401.06066
 * DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models | https://arxiv.org/abs/2402.03300
 * FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | https://arxiv.org/abs/2407.08608
 * Qwen2 Technical Report | https://arxiv.org/abs/2407.10671

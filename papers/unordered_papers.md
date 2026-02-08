@@ -34,6 +34,8 @@ todo:
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
 * AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration | https://arxiv.org/abs/2306.00978
+* Mixtral of Experts | https://arxiv.org/abs/2401.04088
+* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/pdf/2401.06066
 
 done:
 * Attention Is All You Need | https://arxiv.org/abs/1706.03762
