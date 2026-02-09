@@ -30,7 +30,6 @@ todo:
 * Qwen2 Technical Report | https://arxiv.org/abs/2407.10671
 * Qwen2.5 Technical Report | https://arxiv.org/abs/2412.15115
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
-* Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer | https://arxiv.org/abs/1701.06538
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
 * AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration | https://arxiv.org/abs/2306.00978
@@ -38,6 +37,7 @@ todo:
 * DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/pdf/2401.06066
 
 done:
+* Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer | https://arxiv.org/abs/1701.06538
 * Attention Is All You Need | https://arxiv.org/abs/1706.03762
 * BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | https://arxiv.org/abs/1810.04805
 * ZeRO: Memory Optimizations Toward Training Trillion Parameter Models | https://arxiv.org/abs/1910.02054
