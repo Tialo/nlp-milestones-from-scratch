@@ -2,7 +2,6 @@ todo:
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
 * Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
-* Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
 * Direct Preference Optimization: Your Language Model is Secretly a Reward Model | https://arxiv.org/abs/2305.18290
 * DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models | https://arxiv.org/abs/2402.03300
 * DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | https://arxiv.org/abs/2501.12948
@@ -20,7 +19,6 @@ todo:
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
-* Root Mean Square Layer Normalization | https://arxiv.org/abs/1910.07467
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
 * QLoRA: Efficient Finetuning of Quantized LLMs | https://arxiv.org/abs/2305.14314
 * Fast Inference from Transformers via Speculative Decoding | https://arxiv.org/abs/2211.17192
@@ -34,9 +32,14 @@ todo:
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
 * AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration | https://arxiv.org/abs/2306.00978
 * Mixtral of Experts | https://arxiv.org/abs/2401.04088
-* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/pdf/2401.06066
+* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/abs/2401.06066
+* Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
+* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
+* SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
 
 done:
+* Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
+* Root Mean Square Layer Normalization | https://arxiv.org/abs/1910.07467
 * Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer | https://arxiv.org/abs/1701.06538
 * Attention Is All You Need | https://arxiv.org/abs/1706.03762
 * BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | https://arxiv.org/abs/1810.04805

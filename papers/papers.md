@@ -1,5 +1,4 @@
 todo:
-* Root Mean Square Layer Normalization | https://arxiv.org/abs/1910.07467
 * Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
 * Scaling Laws for Neural Language Models | https://arxiv.org/abs/2001.08361
 * Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
@@ -7,7 +6,10 @@ todo:
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
 * Rethinking Attention with Performers | https://arxiv.org/abs/2009.14794
+* Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
+* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
+* SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
 * RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
 * LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
@@ -29,7 +31,7 @@ todo:
 * Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
 * Qwen Technical Report | https://arxiv.org/abs/2309.16609
 * Mixtral of Experts | https://arxiv.org/abs/2401.04088
-* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/pdf/2401.06066
+* DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/abs/2401.06066
 * DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models | https://arxiv.org/abs/2402.03300
 * FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | https://arxiv.org/abs/2407.08608
 * Qwen2 Technical Report | https://arxiv.org/abs/2407.10671
@@ -54,6 +56,7 @@ done:
 * Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism | https://arxiv.org/abs/1909.08053
 * ALBERT: A Lite BERT for Self-supervised Learning of Language Representations | https://arxiv.org/abs/1909.11942
 * ZeRO: Memory Optimizations Toward Training Trillion Parameter Models | https://arxiv.org/abs/1910.02054
+* Root Mean Square Layer Normalization | https://arxiv.org/abs/1910.07467
 * Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer | https://arxiv.org/abs/1910.10683 | T5
 * BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension | https://arxiv.org/abs/1910.13461
 * Fast Transformer Decoding: One Write-Head is All You Need | https://arxiv.org/abs/1911.02150
