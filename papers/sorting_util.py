@@ -140,14 +140,13 @@ def sort_file_content(lines: list[str]) -> list[str]:
 
 
 def main():
-    in_path = "unordered_papers.md"
-    out_path = "papers.md"
-    with open(in_path, encoding="utf-8") as f:
+    papers_path = "papers.md"
+    with open(papers_path, encoding="utf-8") as f:
         lines = f.readlines()
 
     out_lines = sort_file_content(lines)
 
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(papers_path, "w", encoding="utf-8") as f:
         f.writelines(out_lines)
 
 

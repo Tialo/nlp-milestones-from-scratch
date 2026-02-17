@@ -1,5 +1,4 @@
 todo:
-* Scaling Laws for Neural Language Models | https://arxiv.org/abs/2001.08361
 * Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
@@ -40,10 +39,10 @@ todo:
 done:
 * Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer | https://arxiv.org/abs/1701.06538
 * Attention Is All You Need | https://arxiv.org/abs/1706.03762
-* Improving Language Understanding by Generative Pre-Training | https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf | 06.2017, GPT1
-* Proximal Policy Optimization Algorithms | https://arxiv.org/abs/1707.06347
+* Proximal Policy Optimization Algorithms | https://arxiv.org/abs/1707.06347 | PPO
 * Mixed Precision Training | https://arxiv.org/abs/1710.03740
 * Self-Attention with Relative Position Representations | https://arxiv.org/abs/1803.02155
+* Improving Language Understanding by Generative Pre-Training | https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf | 06.2018, GPT1
 * BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | https://arxiv.org/abs/1810.04805
 * GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism | https://arxiv.org/abs/1811.06965
 * Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context | https://arxiv.org/abs/1901.02860
@@ -60,6 +59,7 @@ done:
 * BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension | https://arxiv.org/abs/1910.13461
 * Fast Transformer Decoding: One Write-Head is All You Need | https://arxiv.org/abs/1911.02150
 * Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
+* Scaling Laws for Neural Language Models | https://arxiv.org/abs/2001.08361
 * ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators | https://arxiv.org/abs/2003.10555
 * Language Models are Few-Shot Learners | https://arxiv.org/abs/2005.14165 | GPT3
 * DeBERTa: Decoding-enhanced BERT with Disentangled Attention | https://arxiv.org/abs/2006.03654
