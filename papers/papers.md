@@ -1,5 +1,5 @@
 todo:
-* Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
+* Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
@@ -61,5 +61,6 @@ done:
 * Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
 * Scaling Laws for Neural Language Models | https://arxiv.org/abs/2001.08361
 * ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators | https://arxiv.org/abs/2003.10555
+* Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
 * Language Models are Few-Shot Learners | https://arxiv.org/abs/2005.14165 | GPT3
 * DeBERTa: Decoding-enhanced BERT with Disentangled Attention | https://arxiv.org/abs/2006.03654
