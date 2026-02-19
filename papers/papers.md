@@ -1,5 +1,4 @@
 todo:
-* Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
@@ -12,6 +11,7 @@ todo:
 * LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
 * Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
+* DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
@@ -79,3 +79,4 @@ done:
 * Longformer: The Long-Document Transformer | https://arxiv.org/abs/2004.05150
 * Language Models are Few-Shot Learners | https://arxiv.org/abs/2005.14165 | GPT3
 * DeBERTa: Decoding-enhanced BERT with Disentangled Attention | https://arxiv.org/abs/2006.03654
+* Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
