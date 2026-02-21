@@ -1,6 +1,4 @@
 todo:
-* GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
-* Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
 * Rethinking Attention with Performers | https://arxiv.org/abs/2009.14794
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
@@ -80,3 +78,5 @@ done:
 * Language Models are Few-Shot Learners | https://arxiv.org/abs/2005.14165 | GPT3
 * DeBERTa: Decoding-enhanced BERT with Disentangled Attention | https://arxiv.org/abs/2006.03654
 * Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
+* GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
+* Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
