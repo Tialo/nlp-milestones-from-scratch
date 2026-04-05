@@ -1,4 +1,5 @@
 todo:
+========== 2021 ==========
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
 * GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
 * The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
@@ -11,6 +12,7 @@ todo:
 * P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
 * Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
+========== 2022 ==========
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
@@ -22,6 +24,7 @@ todo:
 * Fast Inference from Transformers via Speculative Decoding | https://arxiv.org/abs/2211.17192
 * Text Embeddings by Weakly-Supervised Contrastive Pre-training | https://arxiv.org/abs/2212.03533 | E5
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
+========== 2023 ==========
 * LLaMA: Open and Efficient Foundation Language Models | https://arxiv.org/abs/2302.13971
 * GPT-4 Technical Report | https://arxiv.org/abs/2303.08774
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
@@ -35,6 +38,7 @@ todo:
 * Qwen Technical Report | https://arxiv.org/abs/2309.16609
 * Mistral 7B | https://arxiv.org/abs/2310.06825
 * Gemini: A Family of Highly Capable Multimodal Models | https://arxiv.org/abs/2312.11805
+========== 2024 ==========
 * Mixtral of Experts | https://arxiv.org/abs/2401.04088
 * DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/abs/2401.06066
 * DeepSeek-Coder: When the Large Language Model Meets Programming -- The Rise of Code Intelligence | https://arxiv.org/abs/2401.14196
@@ -46,19 +50,25 @@ todo:
 * Qwen2 Technical Report | https://arxiv.org/abs/2407.10671
 * The Llama 3 Herd of Models | https://arxiv.org/abs/2407.21783
 * Qwen2.5 Technical Report | https://arxiv.org/abs/2412.15115
+========== 2025 ==========
 * DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | https://arxiv.org/abs/2501.12948
 * Qwen3 Technical Report | https://arxiv.org/abs/2505.09388
 * Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities | https://arxiv.org/abs/2507.06261
 
+
+
 done:
+========== 2017 ==========
 * Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer | https://arxiv.org/abs/1701.06538
 * Attention Is All You Need | https://arxiv.org/abs/1706.03762
 * Proximal Policy Optimization Algorithms | https://arxiv.org/abs/1707.06347 | PPO
 * Mixed Precision Training | https://arxiv.org/abs/1710.03740
+========== 2018 ==========
 * Self-Attention with Relative Position Representations | https://arxiv.org/abs/1803.02155
 * Improving Language Understanding by Generative Pre-Training | https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf | 06.2018, GPT1
 * BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | https://arxiv.org/abs/1810.04805
 * GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism | https://arxiv.org/abs/1811.06965
+========== 2019 ==========
 * Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context | https://arxiv.org/abs/1901.02860
 * Language Models are Unsupervised Multitask Learners | https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf | 02.2019, GPT2
 * Generating Long Sequences with Sparse Transformers | https://arxiv.org/abs/1904.10509
@@ -72,6 +82,7 @@ done:
 * Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer | https://arxiv.org/abs/1910.10683 | T5
 * BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension | https://arxiv.org/abs/1910.13461
 * Fast Transformer Decoding: One Write-Head is All You Need | https://arxiv.org/abs/1911.02150
+========== 2020 ==========
 * Reformer: The Efficient Transformer | https://arxiv.org/abs/2001.04451
 * Scaling Laws for Neural Language Models | https://arxiv.org/abs/2001.08361
 * GLU Variants Improve Transformer | https://arxiv.org/abs/2002.05202 | SwiGLU
@@ -83,4 +94,5 @@ done:
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
+========== 2021 ==========
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
