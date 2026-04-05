@@ -14,17 +14,22 @@ todo:
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 ========== 2022 ==========
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
+* Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
 * Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
 * FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness | https://arxiv.org/abs/2205.14135
 * LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale | https://arxiv.org/abs/2208.07339
+* ReAct: Synergizing Reasoning and Acting in Language Models | https://arxiv.org/abs/2210.03629
+* Scaling Instruction-Finetuned Language Models | https://arxiv.org/abs/2210.11416
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
 * Fast Inference from Transformers via Speculative Decoding | https://arxiv.org/abs/2211.17192
 * Text Embeddings by Weakly-Supervised Contrastive Pre-training | https://arxiv.org/abs/2212.03533 | E5
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
+* Self-Instruct: Aligning Language Models with Self-Generated Instructions | https://arxiv.org/abs/2212.10560
 ========== 2023 ==========
+* Toolformer: Language Models Can Teach Themselves to Use Tools | https://arxiv.org/abs/2302.04761
 * LLaMA: Open and Efficient Foundation Language Models | https://arxiv.org/abs/2302.13971
 * GPT-4 Technical Report | https://arxiv.org/abs/2303.08774
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
