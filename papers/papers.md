@@ -1,10 +1,15 @@
 todo:
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
+* GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
+* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
 * RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
 * LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
 * Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
+* Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
+* P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
+* Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
