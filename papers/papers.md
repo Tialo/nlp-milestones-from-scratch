@@ -1,5 +1,4 @@
 todo:
-* Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
 * Rethinking Attention with Performers | https://arxiv.org/abs/2009.14794
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
@@ -80,3 +79,4 @@ done:
 * Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
+* Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
