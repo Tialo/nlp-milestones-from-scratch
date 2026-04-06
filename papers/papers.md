@@ -6,6 +6,7 @@ todo:
 * RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
 * LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
 * Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
+* Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation | https://arxiv.org/abs/2108.12409
 * Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
 * P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
 * Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207
@@ -18,6 +19,7 @@ todo:
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
 * Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
 * FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness | https://arxiv.org/abs/2205.14135
+* Orca: A Distributed Serving System for Transformer-Based Generative Models | https://www.usenix.org/system/files/osdi22-yu.pdf | 06.2022
 * LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale | https://arxiv.org/abs/2208.07339
 * ReAct: Synergizing Reasoning and Acting in Language Models | https://arxiv.org/abs/2210.03629
 * Scaling Instruction-Finetuned Language Models | https://arxiv.org/abs/2210.11416
@@ -37,26 +39,36 @@ todo:
 * FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning | https://arxiv.org/abs/2307.08691
 * Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
 * Code Llama: Open Foundation Models for Code | https://arxiv.org/abs/2308.12950
-* Efficient Memory Management for Large Language Model Serving with PagedAttention | https://arxiv.org/abs/2309.06180
+* YaRN: Efficient Context Window Extension of Large Language Models | https://arxiv.org/abs/2309.00071
+* Efficient Memory Management for Large Language Model Serving with PagedAttention | https://arxiv.org/abs/2309.06180 | vLLM
 * Qwen Technical Report | https://arxiv.org/abs/2309.16609
+* Ring Attention with Blockwise Transformers for Near-Infinite Context | https://arxiv.org/abs/2310.01889
 * Mistral 7B | https://arxiv.org/abs/2310.06825
 * Gemini: A Family of Highly Capable Multimodal Models | https://arxiv.org/abs/2312.11805
 ========== 2024 ==========
 * Mixtral of Experts | https://arxiv.org/abs/2401.04088
 * DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models | https://arxiv.org/abs/2401.06066
+* Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads | https://arxiv.org/abs/2401.10774
 * DeepSeek-Coder: When the Large Language Model Meets Programming -- The Rise of Code Intelligence | https://arxiv.org/abs/2401.14196
+* EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty | https://arxiv.org/abs/2401.15077
 * DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models | https://arxiv.org/abs/2402.03300 | GRPO
 * M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation | https://arxiv.org/abs/2402.05672 | BGE-M3
+* LongRoPE: Extending LLM Context Window Beyond 2 Million Tokens | https://arxiv.org/abs/2402.13753
+* Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve | https://arxiv.org/abs/2403.02310
 * Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context | https://arxiv.org/abs/2403.05530
 * CodeGemma: Open Code Models Based on Gemma | https://arxiv.org/abs/2406.11409
+* EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees | https://arxiv.org/abs/2406.16858
 * FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | https://arxiv.org/abs/2407.08608
 * Qwen2 Technical Report | https://arxiv.org/abs/2407.10671
+* An Efficient Inference Framework for Early-exit Large Language Models | https://arxiv.org/abs/2407.20272
 * The Llama 3 Herd of Models | https://arxiv.org/abs/2407.21783
 * Qwen2.5 Technical Report | https://arxiv.org/abs/2412.15115
+* DeepSeek-V3 Technical Report | https://arxiv.org/abs/2412.19437
 ========== 2025 ==========
 * DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | https://arxiv.org/abs/2501.12948
 * Qwen3 Technical Report | https://arxiv.org/abs/2505.09388
 * Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities | https://arxiv.org/abs/2507.06261
+* Kimi K2: Open Agentic Intelligence | https://arxiv.org/abs/2507.20534
 
 
 
