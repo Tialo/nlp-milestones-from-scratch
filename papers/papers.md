@@ -1,8 +1,6 @@
 todo:
 ========== 2021 ==========
-* Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
 * GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
-* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
 * RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
@@ -101,3 +99,4 @@ done:
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
 ========== 2021 ==========
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
+* Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
