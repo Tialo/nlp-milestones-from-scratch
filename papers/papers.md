@@ -1,15 +1,8 @@
 todo:
 ========== 2021 ==========
-* GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
-* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
-* SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
-* RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
-* LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
-* Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
-* Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation | https://arxiv.org/abs/2108.12409
-* Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
 * P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
 * Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207
+* Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.14168
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 ========== 2022 ==========
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
@@ -18,6 +11,7 @@ todo:
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
 * Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
+* Large Language Models are Zero-Shot Reasoners | https://arxiv.org/abs/2205.11916
 * FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness | https://arxiv.org/abs/2205.14135
 * Orca: A Distributed Serving System for Transformer-Based Generative Models | https://www.usenix.org/system/files/osdi22-yu.pdf | 06.2022
 * LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale | https://arxiv.org/abs/2208.07339
@@ -36,6 +30,7 @@ todo:
 * QLoRA: Efficient Finetuning of Quantized LLMs | https://arxiv.org/abs/2305.14314
 * Direct Preference Optimization: Your Language Model is Secretly a Reward Model | https://arxiv.org/abs/2305.18290 | DPO
 * AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration | https://arxiv.org/abs/2306.00978
+* Extending Context Window of Large Language Models via Positional Interpolation | https://arxiv.org/abs/2306.15595
 * FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning | https://arxiv.org/abs/2307.08691
 * Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
 * Code Llama: Open Foundation Models for Code | https://arxiv.org/abs/2308.12950
@@ -112,3 +107,11 @@ done:
 ========== 2021 ==========
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
+* GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
+* The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
+* SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
+* RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
+* LoRA: Low-Rank Adaptation of Large Language Models | https://arxiv.org/abs/2106.09685
+* Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
+* Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation | https://arxiv.org/abs/2108.12409
+* Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
