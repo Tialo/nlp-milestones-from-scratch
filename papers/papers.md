@@ -1,9 +1,7 @@
 todo:
 ========== 2021 ==========
-* P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
-* Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207
+* Scalable and Efficient MoE Training for Multitask Multilingual Models | https://arxiv.org/abs/2109.10465
 * Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.14168
-* GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 ========== 2022 ==========
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
 * Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
@@ -26,6 +24,7 @@ todo:
 * Toolformer: Language Models Can Teach Themselves to Use Tools | https://arxiv.org/abs/2302.04761
 * LLaMA: Open and Efficient Foundation Language Models | https://arxiv.org/abs/2302.13971
 * GPT-4 Technical Report | https://arxiv.org/abs/2303.08774
+* PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel | https://arxiv.org/abs/2304.11277
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
 * QLoRA: Efficient Finetuning of Quantized LLMs | https://arxiv.org/abs/2305.14314
 * Direct Preference Optimization: Your Language Model is Secretly a Reward Model | https://arxiv.org/abs/2305.18290 | DPO
@@ -107,7 +106,9 @@ done:
 ========== 2021 ==========
 * Prefix-Tuning: Optimizing Continuous Prompts for Generation | https://arxiv.org/abs/2101.00190
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
+* ZeRO-Offload: Democratizing Billion-Scale Model Training | https://arxiv.org/abs/2101.06840
 * GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
+* ZeRO-Infinity: Breaking the GPU Memory Wall for Extreme Scale Deep Learning | https://arxiv.org/abs/2104.07857
 * The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
 * RoFormer: Enhanced Transformer with Rotary Position Embedding | https://arxiv.org/abs/2104.09864
@@ -115,3 +116,6 @@ done:
 * Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
 * Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation | https://arxiv.org/abs/2108.12409
 * Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
+* P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
+* Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207 | T0
+* GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
