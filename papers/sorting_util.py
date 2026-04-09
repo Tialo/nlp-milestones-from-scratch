@@ -130,18 +130,14 @@ def sort_section_bullets(section_lines: list[str]) -> list[str]:
     out: list[str] = []
     current_year: int | None = None
     bullet_pos_index = 0
-    has_written_year_divider = False
 
     for i, ln in enumerate(clean_lines):
         if bullet_pos_index < len(bullet_positions) and i == bullet_positions[bullet_pos_index]:
             key, bullet_line = next(keyed_iter)
             if key.kind != 2 and key.year != current_year:
-                # if has_written_year_divider and (not out or out[-1].strip()):
-                #     out.append("\n")
+                out.append("\n")
                 out.append(format_year_divider(key.year))
-                # out.append("\n")
                 current_year = key.year
-                has_written_year_divider = True
             out.append(bullet_line)
             bullet_pos_index += 1
             continue
