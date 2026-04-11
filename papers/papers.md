@@ -1,12 +1,9 @@
 todo:
 
 ========== 2021 ==========
-* Scalable and Efficient MoE Training for Multitask Multilingual Models | https://arxiv.org/abs/2109.10465
-* Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.14168
+* Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.141684
 
 ========== 2022 ==========
-* DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
-* Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
@@ -18,6 +15,7 @@ todo:
 * ReAct: Synergizing Reasoning and Acting in Language Models | https://arxiv.org/abs/2210.03629
 * Scaling Instruction-Finetuned Language Models | https://arxiv.org/abs/2210.11416
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
+* MegaBlocks: Efficient Sparse Training with Mixture-of-Experts | https://arxiv.org/abs/2211.15841
 * Fast Inference from Transformers via Speculative Decoding | https://arxiv.org/abs/2211.17192
 * Text Embeddings by Weakly-Supervised Contrastive Pre-training | https://arxiv.org/abs/2212.03533 | E5
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
@@ -54,6 +52,7 @@ todo:
 * LongRoPE: Extending LLM Context Window Beyond 2 Million Tokens | https://arxiv.org/abs/2402.13753
 * Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve | https://arxiv.org/abs/2403.02310
 * Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context | https://arxiv.org/abs/2403.05530
+* DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model | https://arxiv.org/abs/2405.04434
 * CodeGemma: Open Code Models Based on Gemma | https://arxiv.org/abs/2406.11409
 * EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees | https://arxiv.org/abs/2406.16858
 * FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | https://arxiv.org/abs/2407.08608
@@ -118,6 +117,8 @@ done:
 * Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity | https://arxiv.org/abs/2101.03961
 * ZeRO-Offload: Democratizing Billion-Scale Model Training | https://arxiv.org/abs/2101.06840
 * GPT Understands, Too | https://arxiv.org/abs/2103.10385 | P-Tuning
+* FastMoE: A Fast Mixture-of-Expert Training System | https://arxiv.org/abs/2103.13262
+* Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM | https://arxiv.org/abs/2104.04473
 * ZeRO-Infinity: Breaking the GPU Memory Wall for Extreme Scale Deep Learning | https://arxiv.org/abs/2104.07857
 * The Power of Scale for Parameter-Efficient Prompt Tuning | https://arxiv.org/abs/2104.08691
 * SimCSE: Simple Contrastive Learning of Sentence Embeddings | https://arxiv.org/abs/2104.08821
@@ -126,6 +127,13 @@ done:
 * Evaluating Large Language Models Trained on Code | https://arxiv.org/abs/2107.03374
 * Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation | https://arxiv.org/abs/2108.12409
 * Finetuned Language Models Are Zero-Shot Learners | https://arxiv.org/abs/2109.01652
+* Scalable and Efficient MoE Training for Multitask Multilingual Models | https://arxiv.org/abs/2109.10465
 * P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
 * Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207 | T0
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
+
+========== 2022 ==========
+* DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
+* Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
+* Self-Consistency Improves Chain of Thought Reasoning in Language Models | https://arxiv.org/abs/2203.11171
+* Emergent Abilities of Large Language Models | https://arxiv.org/abs/2206.07682
