@@ -1,10 +1,6 @@
 todo:
 
-========== 2021 ==========
-* Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.141684
-
 ========== 2022 ==========
-* Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
 * Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
@@ -130,10 +126,12 @@ done:
 * Scalable and Efficient MoE Training for Multitask Multilingual Models | https://arxiv.org/abs/2109.10465
 * P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Universally Across Scales and Tasks | https://arxiv.org/abs/2110.07602
 * Multitask Prompted Training Enables Zero-Shot Task Generalization | https://arxiv.org/abs/2110.08207 | T0
+* Training Verifiers to Solve Math Word Problems | https://arxiv.org/abs/2110.14168
 * GLaM: Efficient Scaling of Language Models with Mixture-of-Experts | https://arxiv.org/abs/2112.06905
 
 ========== 2022 ==========
 * DeepSpeed-MoE: Advancing Mixture-of-Experts Inference and Training to Power Next-Generation AI Scale | https://arxiv.org/abs/2201.05596
 * Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
+* Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Self-Consistency Improves Chain of Thought Reasoning in Language Models | https://arxiv.org/abs/2203.11171
 * Emergent Abilities of Large Language Models | https://arxiv.org/abs/2206.07682
