@@ -43,6 +43,7 @@ todo:
 * Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads | https://arxiv.org/abs/2401.10774
 * DeepSeek-Coder: When the Large Language Model Meets Programming -- The Rise of Code Intelligence | https://arxiv.org/abs/2401.14196
 * EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty | https://arxiv.org/abs/2401.15077
+* Executable Code Actions Elicit Better LLM Agents | https://arxiv.org/abs/2402.01030
 * DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models | https://arxiv.org/abs/2402.03300 | GRPO
 * M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation | https://arxiv.org/abs/2402.05672 | BGE-M3
 * LongRoPE: Extending LLM Context Window Beyond 2 Million Tokens | https://arxiv.org/abs/2402.13753
