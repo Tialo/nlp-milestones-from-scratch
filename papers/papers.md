@@ -61,6 +61,7 @@ todo:
 
 ========== 2025 ==========
 * DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | https://arxiv.org/abs/2501.12948
+* Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention | https://arxiv.org/abs/2502.11089
 * Qwen3 Technical Report | https://arxiv.org/abs/2505.09388
 * Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities | https://arxiv.org/abs/2507.06261
 * Kimi K2: Open Agentic Intelligence | https://arxiv.org/abs/2507.20534
@@ -76,13 +77,16 @@ done:
 * Mixed Precision Training | https://arxiv.org/abs/1710.03740
 
 ========== 2018 ==========
+* Universal Language Model Fine-tuning for Text Classification | https://arxiv.org/abs/1801.06146
 * Self-Attention with Relative Position Representations | https://arxiv.org/abs/1803.02155
+* Universal Sentence Encoder | https://arxiv.org/abs/1803.11175
 * Improving Language Understanding by Generative Pre-Training | https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf | 06.2018, GPT1
 * BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding | https://arxiv.org/abs/1810.04805
 * GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism | https://arxiv.org/abs/1811.06965
 
 ========== 2019 ==========
 * Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context | https://arxiv.org/abs/1901.02860
+* Parameter-Efficient Transfer Learning for NLP | https://arxiv.org/abs/1902.00751
 * Language Models are Unsupervised Multitask Learners | https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf | 02.2019, GPT2
 * Generating Long Sequences with Sparse Transformers | https://arxiv.org/abs/1904.10509
 * Unified Language Model Pre-training for Natural Language Understanding and Generation | https://arxiv.org/abs/1905.03197 | UniLM
@@ -106,6 +110,7 @@ done:
 * DeBERTa: Decoding-enhanced BERT with Disentangled Attention | https://arxiv.org/abs/2006.03654
 * Linformer: Self-Attention with Linear Complexity | https://arxiv.org/abs/2006.04768
 * GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding | https://arxiv.org/abs/2006.16668
+* Language-agnostic BERT Sentence Embedding | https://arxiv.org/abs/2007.01852
 * Big Bird: Transformers for Longer Sequences | https://arxiv.org/abs/2007.14062
 * Learning to summarize from human feedback | https://arxiv.org/abs/2009.01325
 
