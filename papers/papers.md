@@ -1,13 +1,12 @@
 todo:
 
 ========== 2022 ==========
-* Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
-* PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
-* Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
 * Large Language Models are Zero-Shot Reasoners | https://arxiv.org/abs/2205.11916
 * FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness | https://arxiv.org/abs/2205.14135
 * Orca: A Distributed Serving System for Transformer-Based Generative Models | https://www.usenix.org/system/files/osdi22-yu.pdf | 06.2022
+* Language Models (Mostly) Know What They Know | https://arxiv.org/abs/2207.05221
 * LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale | https://arxiv.org/abs/2208.07339
+* Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned | https://arxiv.org/abs/2209.07858
 * ReAct: Synergizing Reasoning and Acting in Language Models | https://arxiv.org/abs/2210.03629
 * Scaling Instruction-Finetuned Language Models | https://arxiv.org/abs/2210.11416
 * GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers | https://arxiv.org/abs/2210.17323
@@ -15,7 +14,6 @@ todo:
 * Fast Inference from Transformers via Speculative Decoding | https://arxiv.org/abs/2211.17192
 * Text Embeddings by Weakly-Supervised Contrastive Pre-training | https://arxiv.org/abs/2212.03533 | E5
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
-* Self-Instruct: Aligning Language Models with Self-Generated Instructions | https://arxiv.org/abs/2212.10560
 
 ========== 2023 ==========
 * Toolformer: Language Models Can Teach Themselves to Use Tools | https://arxiv.org/abs/2302.04761
@@ -140,4 +138,8 @@ done:
 * Chain-of-Thought Prompting Elicits Reasoning in Large Language Models | https://arxiv.org/abs/2201.11903
 * Training language models to follow instructions with human feedback | https://arxiv.org/abs/2203.02155 | InstructGPT
 * Self-Consistency Improves Chain of Thought Reasoning in Language Models | https://arxiv.org/abs/2203.11171
+* Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
+* PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
+* Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
 * Emergent Abilities of Large Language Models | https://arxiv.org/abs/2206.07682
+* Self-Instruct: Aligning Language Models with Self-Generated Instructions | https://arxiv.org/abs/2212.10560
