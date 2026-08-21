@@ -1,10 +1,8 @@
 todo:
 
 ========== 2022 ==========
-* Large Language Models are Zero-Shot Reasoners | https://arxiv.org/abs/2205.11916
 * FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness | https://arxiv.org/abs/2205.14135
 * Orca: A Distributed Serving System for Transformer-Based Generative Models | https://www.usenix.org/system/files/osdi22-yu.pdf | 06.2022
-* Language Models (Mostly) Know What They Know | https://arxiv.org/abs/2207.05221
 * LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale | https://arxiv.org/abs/2208.07339
 * Red Teaming Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned | https://arxiv.org/abs/2209.07858
 * ReAct: Synergizing Reasoning and Acting in Language Models | https://arxiv.org/abs/2210.03629
@@ -16,18 +14,12 @@ todo:
 * Constitutional AI: Harmlessness from AI Feedback | https://arxiv.org/abs/2212.08073
 
 ========== 2023 ==========
-* Toolformer: Language Models Can Teach Themselves to Use Tools | https://arxiv.org/abs/2302.04761
-* LLaMA: Open and Efficient Foundation Language Models | https://arxiv.org/abs/2302.13971
-* GPT-4 Technical Report | https://arxiv.org/abs/2303.08774
 * PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel | https://arxiv.org/abs/2304.11277
 * GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints | https://arxiv.org/abs/2305.13245
 * QLoRA: Efficient Finetuning of Quantized LLMs | https://arxiv.org/abs/2305.14314
 * Direct Preference Optimization: Your Language Model is Secretly a Reward Model | https://arxiv.org/abs/2305.18290 | DPO
 * AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration | https://arxiv.org/abs/2306.00978
-* Extending Context Window of Large Language Models via Positional Interpolation | https://arxiv.org/abs/2306.15595
 * FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning | https://arxiv.org/abs/2307.08691
-* Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
-* Code Llama: Open Foundation Models for Code | https://arxiv.org/abs/2308.12950
 * YaRN: Efficient Context Window Extension of Large Language Models | https://arxiv.org/abs/2309.00071
 * Efficient Memory Management for Large Language Model Serving with PagedAttention | https://arxiv.org/abs/2309.06180 | vLLM
 * Qwen Technical Report | https://arxiv.org/abs/2309.16609
@@ -47,6 +39,7 @@ todo:
 * LongRoPE: Extending LLM Context Window Beyond 2 Million Tokens | https://arxiv.org/abs/2402.13753
 * Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve | https://arxiv.org/abs/2403.02310
 * Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context | https://arxiv.org/abs/2403.05530
+* The Instruction Hierarchy: Training LLMs to Prioritize Privileged Instructions | https://arxiv.org/abs/2404.13208
 * DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model | https://arxiv.org/abs/2405.04434
 * CodeGemma: Open Code Models Based on Gemma | https://arxiv.org/abs/2406.11409
 * EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees | https://arxiv.org/abs/2406.16858
@@ -63,7 +56,6 @@ todo:
 * Qwen3 Technical Report | https://arxiv.org/abs/2505.09388
 * Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities | https://arxiv.org/abs/2507.06261
 * Kimi K2: Open Agentic Intelligence | https://arxiv.org/abs/2507.20534
-
 
 
 done:
@@ -141,5 +133,15 @@ done:
 * Training Compute-Optimal Large Language Models | https://arxiv.org/abs/2203.15556
 * PaLM: Scaling Language Modeling with Pathways | https://arxiv.org/abs/2204.02311
 * Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback | https://arxiv.org/abs/2204.05862
+* Large Language Models are Zero-Shot Reasoners | https://arxiv.org/abs/2205.11916
 * Emergent Abilities of Large Language Models | https://arxiv.org/abs/2206.07682
+* Language Models (Mostly) Know What They Know | https://arxiv.org/abs/2207.05221
 * Self-Instruct: Aligning Language Models with Self-Generated Instructions | https://arxiv.org/abs/2212.10560
+
+========== 2023 ==========
+* Toolformer: Language Models Can Teach Themselves to Use Tools | https://arxiv.org/abs/2302.04761
+* LLaMA: Open and Efficient Foundation Language Models | https://arxiv.org/abs/2302.13971
+* GPT-4 Technical Report | https://arxiv.org/abs/2303.08774
+* Extending Context Window of Large Language Models via Positional Interpolation | https://arxiv.org/abs/2306.15595
+* Llama 2: Open Foundation and Fine-Tuned Chat Models | https://arxiv.org/abs/2307.09288
+* Code Llama: Open Foundation Models for Code | https://arxiv.org/abs/2308.12950
